@@ -55,7 +55,9 @@ func ParseSRTFile(path string) ([]Cue, error) {
 			return nil, fmt.Errorf("cue %d end: %w", index, err)
 		}
 		if end <= start {
-			log.GetLogger().Warn("Bỏ qua phụ đề lỗi do thời lượng <= 0", zap.Int("cue", index), zap.Float64("start", start), zap.Float64("end", end))
+			if logger := log.GetLogger(); logger != nil {
+				logger.Warn("Bỏ qua phụ đề lỗi do thời lượng <= 0", zap.Int("cue", index), zap.Float64("start", start), zap.Float64("end", end))
+			}
 			continue
 		}
 

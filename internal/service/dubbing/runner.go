@@ -76,7 +76,7 @@ func (r *Runner) Run(ctx context.Context) (Result, error) {
 		return Result{}, err
 	}
 
-	plan, chunks, err = GenerateRawChunkSegments(ctx, r.deps.TTS, plan, chunks, r.deps.Voice, segmentsDir, r.deps.FFmpeg, r.deps.Duration)
+	plan, chunks, err = GenerateRawChunkSegments(ctx, r.deps.TTS, plan, chunks, r.deps.Voice, segmentsDir, r.deps.FFmpeg, r.deps.Duration, r.deps.OnProgress)
 	if err != nil {
 		return Result{}, err
 	}

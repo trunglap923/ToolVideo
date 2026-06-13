@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 func (c *Client) ChatCompletion(query string) (string, error) {
@@ -86,7 +87,9 @@ func (c *Client) Text2Speech(text, voice string, outputFile string) error {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.Conf.Tts.Openai.ApiKey))
 
 	// 发送HTTP请求
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 60 * time.Second,
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

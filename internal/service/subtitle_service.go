@@ -67,7 +67,7 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 		}
 	}
 	var err error
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
 	// 创建字幕任务文件夹
 	taskBasePath := filepath.Join("./tasks", taskId)
 	if _, err = os.Stat(taskBasePath); os.IsNotExist(err) {
@@ -83,6 +83,7 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 		TaskId:   taskId,
 		VideoSrc: req.Url,
 		Status:   types.SubtitleTaskStatusProcessing,
+		Cancel:   cancel,
 	}
 	storage.SubtitleTasks.Store(taskId, taskPtr)
 
@@ -136,9 +137,17 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 				stepParam.TaskPtr.Status = types.SubtitleTaskStatusFailed
 			}
 		}()
+		defer func() {
+			if taskPtr.Cancel != nil {
+				taskPtr.Cancel()
+				taskPtr.Cancel = nil
+			}
+		}()
 		// 新版流程：链接->本地音频文件->视频信息获取（若有）->本地字幕文件->语言合成->视频合成->字幕文件链接生成
 		log.GetLogger().Info("video subtitle start task", zap.String("taskId", taskId))
-		err = s.linkToFile(ctx, &stepParam)
+		stepParam.TaskPtr.StatusMsg = "Đang bắt đầu xử lý video..."
+		
+		err := s.linkToFile(ctx, &stepParam)
 		if err != nil {
 			log.GetLogger().Error("StartVideoSubtitleTask linkToFile err", zap.Any("req", req), zap.Error(err))
 			stepParam.TaskPtr.Status = types.SubtitleTaskStatusFailed
@@ -156,6 +165,7 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 
 		// 针对YouTube视频优先尝试使用yt-dlp下载字幕
 		if strings.Contains(req.Url, "youtube.com") && stepParam.VttSwitch {
+			stepParam.TaskPtr.StatusMsg = "Đang xử lý phụ đề YouTube..."
 			log.GetLogger().Info("Start Process youtube video with vtt", zap.String("taskId", taskId))
 			req := &YoutubeSubtitleReq{
 				TaskBasePath:        stepParam.TaskBasePath,
@@ -219,6 +229,7 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 			}
 			stepParam.TaskPtr.ProcessPct = 95
 		} else {
+			stepParam.TaskPtr.StatusMsg = "Đang trích xuất âm thanh và tạo phụ đề (STT)..."
 			// 非YouTube视频，使用原来的音频转录流程
 			err = s.audioToSubtitle(ctx, &stepParam)
 			if err != nil {
@@ -228,6 +239,8 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 				return
 			}
 		}
+		
+		stepParam.TaskPtr.StatusMsg = "Đang tạo giọng nói nhân tạo (TTS)..."
 		err = s.srtFileToSpeech(ctx, &stepParam)
 		if err != nil {
 			log.GetLogger().Error("StartVideoSubtitleTask srtFileToSpeech err", zap.Any("req", req), zap.Error(err))
@@ -235,6 +248,8 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 			stepParam.TaskPtr.FailReason = err.Error()
 			return
 		}
+		
+		stepParam.TaskPtr.StatusMsg = "Đang ghép lồng tiếng và kết xuất video..."
 		err = s.embedSubtitles(ctx, &stepParam)
 		if err != nil {
 			log.GetLogger().Error("StartVideoSubtitleTask embedSubtitles err", zap.Any("req", req), zap.Error(err))
@@ -242,6 +257,8 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 			stepParam.TaskPtr.FailReason = err.Error()
 			return
 		}
+		
+		stepParam.TaskPtr.StatusMsg = "Đang hoàn tất quá trình..."
 		err = s.uploadSubtitles(ctx, &stepParam)
 		if err != nil {
 			log.GetLogger().Error("StartVideoSubtitleTask uploadSubtitles err", zap.Any("req", req), zap.Error(err))
@@ -270,6 +287,7 @@ func (s Service) GetTaskStatus(req dto.GetVideoSubtitleTaskReq) (*dto.GetVideoSu
 	return &dto.GetVideoSubtitleTaskResData{
 		TaskId:         taskPtr.TaskId,
 		ProcessPercent: taskPtr.ProcessPct,
+		StatusMsg:      taskPtr.StatusMsg,
 		VideoInfo: &dto.VideoInfo{
 			Title:                 taskPtr.Title,
 			Description:           taskPtr.Description,
@@ -285,4 +303,24 @@ func (s Service) GetTaskStatus(req dto.GetVideoSubtitleTaskReq) (*dto.GetVideoSu
 		TargetLanguage:    taskPtr.TargetLanguage,
 		SpeechDownloadUrl: taskPtr.SpeechDownloadUrl,
 	}, nil
+}
+
+func (s Service) CancelTask(req dto.CancelVideoSubtitleTaskReq) error {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	if !ok || task == nil {
+		return errors.New("Không tìm thấy tác vụ (Task not found)")
+	}
+	taskPtr := task.(*types.SubtitleTask)
+	if taskPtr.Status == types.SubtitleTaskStatusProcessing {
+		if taskPtr.Cancel != nil {
+			taskPtr.Cancel()
+			taskPtr.Cancel = nil
+			taskPtr.Status = types.SubtitleTaskStatusFailed
+			taskPtr.FailReason = "Bị huỷ bởi người dùng (Canceled by user)"
+			taskPtr.StatusMsg = "Đã huỷ tiến trình."
+			log.GetLogger().Info("Task canceled successfully", zap.String("taskId", req.TaskId))
+			return nil
+		}
+	}
+	return errors.New("Tác vụ không thể huỷ hoặc đã hoàn thành")
 }

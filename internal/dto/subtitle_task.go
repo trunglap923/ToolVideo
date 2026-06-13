@@ -50,6 +50,7 @@ type SubtitleInfo struct {
 type GetVideoSubtitleTaskResData struct {
 	TaskId            string          `json:"task_id"`
 	ProcessPercent    uint8           `json:"process_percent"`
+	StatusMsg         string          `json:"status_msg"`
 	VideoInfo         *VideoInfo      `json:"video_info"`
 	SubtitleInfo      []*SubtitleInfo `json:"subtitle_info"`
 	TargetLanguage    string          `json:"target_language"`
@@ -60,4 +61,13 @@ type GetVideoSubtitleTaskRes struct {
 	Error int32                        `json:"error"`
 	Msg   string                       `json:"msg"`
 	Data  *GetVideoSubtitleTaskResData `json:"data"`
+}
+
+type CancelVideoSubtitleTaskReq struct {
+	TaskId string `json:"task_id"`
+}
+
+type CancelVideoSubtitleTaskRes struct {
+	Error int32  `json:"error"`
+	Msg   string `json:"msg"`
 }

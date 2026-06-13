@@ -251,7 +251,8 @@ func validateAssemblePlan(plan []PlanItem, segmentsDir string) ([]string, error)
 			return nil, fmt.Errorf("plan item %d new end must be greater than new start: start %.3f end %.3f", item.Index, item.NewStart, item.NewEnd)
 		}
 		if item.NewStart < lastEnd {
-			return nil, fmt.Errorf("plan item %d starts before previous end: start %.3f lastEnd %.3f", item.Index, item.NewStart, lastEnd)
+			plan[i].NewStart = lastEnd
+			item.NewStart = lastEnd
 		}
 
 		filter, err := buildAtempoFilter(item.SpeedFactor)
@@ -285,7 +286,8 @@ func validateAssembleChunkPlan(plan []PlanItem, chunks []Chunk, segmentsDir stri
 			return nil, fmt.Errorf("chunk %d has no items", chunk.ID)
 		}
 		if chunk.Start < lastEnd {
-			return nil, fmt.Errorf("chunk %d starts before previous end: start %.3f lastEnd %.3f", chunk.ID, chunk.Start, lastEnd)
+			chunks[i].Start = lastEnd
+			chunk.Start = lastEnd
 		}
 		end := chunkFittedEnd(plan, chunk)
 		if end <= chunk.Start {

@@ -1,4 +1,4 @@
-﻿package handler
+package handler
 
 import (
 	"krillin-ai/internal/deps"
@@ -83,6 +83,42 @@ func (h Handler) GetSubtitleTask(c *gin.Context) {
 		Error: 0,
 		Msg:   "Thành công",
 		Data:  data,
+	})
+}
+
+func (h Handler) CancelSubtitleTask(c *gin.Context) {
+	var req dto.CancelVideoSubtitleTaskReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.GetLogger().Error("CancelSubtitleTask ShouldBindJSON err", zap.Error(err))
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	// 检查配置是否需要重新初始化
+	if configUpdated {
+		log.GetLogger().Info("检测到配置更新，重新初始化服务")
+		h.Service = service.NewService()
+		configUpdated = false
+	}
+
+	svc := h.Service
+	err := svc.CancelTask(req)
+	if err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(c, response.Response{
+		Error: 0,
+		Msg:   "Thành công",
+		Data:  nil,
 	})
 }
 

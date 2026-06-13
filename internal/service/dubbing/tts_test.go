@@ -107,7 +107,7 @@ func TestGenerateRawChunkSegmentsCallsTTSOncePerChunk(t *testing.T) {
 			return 3.2, nil
 		}
 		return 1.1, nil
-	})
+	}, nil)
 	if err != nil {
 		t.Fatalf("GenerateRawChunkSegments() error = %v", err)
 	}

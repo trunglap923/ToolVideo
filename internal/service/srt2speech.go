@@ -80,6 +80,11 @@ func (s Service) srtFileToSpeech(ctx context.Context, stepParam *types.SubtitleT
 			RewriteMaxAttempts:  config.Conf.Dubbing.RewriteMaxAttempts,
 			Estimator:           config.Conf.Dubbing.Estimator,
 		},
+		OnProgress: func(percent int) {
+			if stepParam.TaskPtr != nil {
+				stepParam.TaskPtr.ProcessPct = uint8(percent)
+			}
+		},
 	})
 	result, err := runner.Run(ctx)
 	if err != nil {

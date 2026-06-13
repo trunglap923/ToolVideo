@@ -1,4 +1,4 @@
-﻿package desktop
+package desktop
 
 import (
 	"fmt"
@@ -456,13 +456,19 @@ func CreateSubtitleTab(window fyne.Window) fyne.CanvasObject {
 
 	progressArea := container.NewVBox(progress)
 
+	settingsGrid := container.NewGridWithColumns(2,
+		container.NewVBox(
+			container.NewPadded(subtitleSettingsCard),
+			container.NewPadded(embedSettingsCard),
+		),
+		container.NewPadded(voiceSettingsCard),
+	)
+
 	mainContent := container.NewVBox(
 		container.NewPadded(titleContainer),
 		spacer1,
 		container.NewPadded(videoInputContainer),
-		container.NewPadded(subtitleSettingsCard),
-		container.NewPadded(voiceSettingsCard),
-		container.NewPadded(embedSettingsCard),
+		settingsGrid,
 		spacer2,
 		container.NewPadded(startButtonContainer),
 		spacer3,
@@ -985,30 +991,35 @@ func createEmbedSettingsCard(sm *SubtitleManager) *fyne.Container {
 }
 
 // 创建进度和下载区域
-func createProgressAndDownloadArea(sm *SubtitleManager) (*widget.ProgressBar, *fyne.Container, *fyne.Container) {
+func createProgressAndDownloadArea(sm *SubtitleManager) (*fyne.Container, *fyne.Container, *fyne.Container) {
 	progress := widget.NewProgressBar()
-	progress.Hide()
 
 	percentLabel := widget.NewLabel("0%")
-	percentLabel.Hide()
 	percentLabel.Alignment = fyne.TextAlignTrailing
 
-	progressContainer := container.NewBorder(nil, nil, nil, percentLabel, progress)
-	progressContainer.Hide()
+	statusMsgLabel := widget.NewLabel("")
+	statusMsgLabel.TextStyle = fyne.TextStyle{Bold: true}
+	statusMsgLabel.Alignment = fyne.TextAlignCenter
+	sm.SetStatusMsgLabel(statusMsgLabel)
+
+	progressContent := container.NewVBox(
+		statusMsgLabel,
+		container.NewBorder(nil, nil, nil, percentLabel, progress),
+	)
 
 	progressBg := canvas.NewRectangle(color.NRGBA{R: 240, G: 245, B: 250, A: 230})
-	progressBg.SetMinSize(fyne.NewSize(0, 40))
+	progressBg.SetMinSize(fyne.NewSize(0, 60))
 	progressBg.CornerRadius = 8
 
 	progressShadow := canvas.NewRectangle(color.NRGBA{R: 0, G: 0, B: 0, A: 20})
 	progressShadow.Move(fyne.NewPos(2, 2))
-	progressShadow.SetMinSize(fyne.NewSize(0, 40))
+	progressShadow.SetMinSize(fyne.NewSize(0, 60))
 	progressShadow.CornerRadius = 8
 
 	progressWithBg := container.NewStack(
 		progressShadow,
 		progressBg,
-		container.NewPadded(progressContainer),
+		container.NewPadded(progressContent),
 	)
 	progressWithBg.Hide()
 
@@ -1043,24 +1054,35 @@ func createProgressAndDownloadArea(sm *SubtitleManager) (*widget.ProgressBar, *f
 	)
 	tipsWithBg.Hide()
 
-	return progress, downloadWithBg, tipsWithBg
+	return progressWithBg, downloadWithBg, tipsWithBg
 }
 
 // 开始按钮
-func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContainer *fyne.Container, embedSettingsCard *fyne.Container, progress *widget.ProgressBar, downloadContainer *fyne.Container) *widget.Button {
+func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContainer *fyne.Container, embedSettingsCard *fyne.Container, progressWithBg *fyne.Container, downloadContainer *fyne.Container) *widget.Button {
 	btn := widget.NewButtonWithIcon("Bắt đầu Dịch", theme.MediaPlayIcon(), nil)
 	btn.Importance = widget.HighImportance
 
+	var isRunning bool
+
 	btn.OnTapped = func() {
-		originalImportance := btn.Importance
+		if isRunning {
+			// 如果正在运行，则执行取消操作
+			sm.CancelTask()
+			isRunning = false
+			btn.SetText("Bắt đầu Dịch")
+			btn.SetIcon(theme.MediaPlayIcon())
+			btn.Importance = widget.HighImportance
+			btn.Refresh()
+			progressWithBg.Hide()
+			return
+		}
+
+		isRunning = true
+		btn.SetText("Dừng lại")
+		btn.SetIcon(theme.CancelIcon())
 		btn.Importance = widget.DangerImportance
 		btn.Refresh()
-
-		go func() {
-			time.Sleep(300 * time.Millisecond)
-			btn.Importance = originalImportance
-			btn.Refresh()
-		}()
+		// 动画效果已移除，因为我们现在切换了按钮状态
 
 		var mainTitle, subTitle string
 
@@ -1082,7 +1104,7 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 
 		sm.SetVerticalTitles(mainTitle, subTitle)
 
-		progress.Show()
+		progressWithBg.Show()
 		sm.progressBar.SetValue(0)
 		downloadContainer.Hide()
 
@@ -1108,7 +1130,12 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 			} else {
 				dialog.ShowError(fmt.Errorf("Vui lòng nhập link video URL"), window)
 			}
-			progress.Hide()
+			progressWithBg.Hide()
+			isRunning = false
+			btn.SetText("Bắt đầu Dịch")
+			btn.SetIcon(theme.MediaPlayIcon())
+			btn.Importance = widget.HighImportance
+			btn.Refresh()
 			return
 		}
 
@@ -1116,7 +1143,12 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Incorrect configuration: %v", err), window)
 			log.GetLogger().Error("Cấu hình không chính xác", zap.Error(err))
-			progress.Hide()
+			progressWithBg.Hide()
+			isRunning = false
+			btn.SetText("Bắt đầu Dịch")
+			btn.SetIcon(theme.MediaPlayIcon())
+			btn.Importance = widget.HighImportance
+			btn.Refresh()
 			return
 		}
 
@@ -1124,16 +1156,25 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Failed to prepare dependencies: %v", err), window)
 			log.GetLogger().Error("Chuẩn bị môi trường thất bại", zap.Error(err))
-			progress.Hide()
+			progressWithBg.Hide()
+			isRunning = false
+			btn.SetText("Bắt đầu Dịch")
+			btn.SetIcon(theme.MediaPlayIcon())
+			btn.Importance = widget.HighImportance
+			btn.Refresh()
 			return
 		}
-		btn.Hide()
 
 		if config.ConfigBackup != config.Conf {
 			if err = server.StopBackend(); err != nil {
 				dialog.ShowError(fmt.Errorf("Failed to stop backend service: %v", err), window)
 				log.GetLogger().Error("Dừng dịch vụ backend thất bại", zap.Error(err))
-				progress.Hide()
+				progressWithBg.Hide()
+				isRunning = false
+				btn.SetText("Bắt đầu Dịch")
+				btn.SetIcon(theme.MediaPlayIcon())
+				btn.Importance = widget.HighImportance
+				btn.Refresh()
 				return
 			}
 
@@ -1141,8 +1182,13 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 				err := server.StartBackend()
 				if err != nil {
 					dialog.ShowError(fmt.Errorf("Failed to start backend service: %v", err), window)
-					log.GetLogger().Error("Failed to start backend service", zap.Error(err))
-					progress.Hide()
+					log.GetLogger().Error("Khởi động dịch vụ backend thất bại", zap.Error(err))
+					progressWithBg.Hide()
+					isRunning = false
+					btn.SetText("Bắt đầu Dịch")
+					btn.SetIcon(theme.MediaPlayIcon())
+					btn.Importance = widget.HighImportance
+					btn.Refresh()
 					return
 				}
 			}()
@@ -1153,7 +1199,12 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 
 		if err = sm.StartTask(); err != nil {
 			dialog.ShowError(err, window)
-			progress.Hide()
+			progressWithBg.Hide()
+			isRunning = false
+			btn.SetText("Bắt đầu Dịch")
+			btn.SetIcon(theme.MediaPlayIcon())
+			btn.Importance = widget.HighImportance
+			btn.Refresh()
 			return
 		}
 
@@ -1169,7 +1220,11 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 				}
 				break
 			}
-			btn.Show()
+			isRunning = false
+			btn.SetText("Bắt đầu Dịch")
+			btn.SetIcon(theme.MediaPlayIcon())
+			btn.Importance = widget.HighImportance
+			btn.Refresh()
 			downloadContainer.Show()
 		}()
 		sm.progressBar.Refresh()

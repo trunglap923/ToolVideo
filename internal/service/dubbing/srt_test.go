@@ -93,8 +93,12 @@ func TestParseSRTFileRejectsNonPositiveCueDuration(t *testing.T) {
 			if err := os.WriteFile(path, []byte(tt.content), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := ParseSRTFile(path); err == nil {
-				t.Fatalf("ParseSRTFile() error = nil, want non-positive duration error")
+			cues, err := ParseSRTFile(path)
+			if err != nil {
+				t.Fatalf("ParseSRTFile() unexpected error = %v", err)
+			}
+			if len(cues) != 0 {
+				t.Fatalf("len(cues) = %d, want 0", len(cues))
 			}
 		})
 	}

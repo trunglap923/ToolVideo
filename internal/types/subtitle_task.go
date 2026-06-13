@@ -1,7 +1,9 @@
 package types
 
-import subtitlestyle "krillin-ai/internal/subtitle_style"
-
+import (
+	"context"
+	subtitlestyle "krillin-ai/internal/subtitle_style"
+)
 // var SplitTextPrompt = `你是一个英语处理专家，擅长翻译成%s和处理英文文本，根据句意和标点对句子进行拆分。
 
 // - 不要漏掉原英文任何一个单词
@@ -388,6 +390,7 @@ type SubtitleTask struct {
 	TargetLanguage        string         `json:"target_language" gorm:"column:target_language"`               // 翻译任务的目标语言
 	VideoSrc              string         `json:"video_src" gorm:"column:video_src"`                           // 视频地址
 	Status                uint8          `json:"status" gorm:"column:status"`                                 // 1-处理中,2-成功,3-失败
+	StatusMsg             string         `json:"status_msg" gorm:"-"`                                         // 详细状态信息
 	LastSuccessStepNum    uint8          `json:"last_success_step_num" gorm:"column:last_success_step_num"`   // 最后成功的子任务序号，用于任务恢复
 	FailReason            string         `json:"fail_reason" gorm:"column:fail_reason"`                       // 失败原因
 	ProcessPct            uint8          `json:"process_percent" gorm:"column:process_percent"`               // 处理进度
@@ -398,6 +401,7 @@ type SubtitleTask struct {
 	SpeechDownloadUrl     string         `json:"speech_download_url" gorm:"column:speech_download_url"` // 语音文件下载地址
 	CreateTime            int64          `json:"create_time" gorm:"column:create_time;autoCreateTime"`  // 创建时间
 	UpdateTime            int64          `json:"update_time" gorm:"column:update_time;autoUpdateTime"`  // 更新时间
+	Cancel                context.CancelFunc `gorm:"-" json:"-"`                                        // Context cancel function
 }
 
 type Word struct {

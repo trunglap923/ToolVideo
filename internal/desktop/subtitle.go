@@ -1,4 +1,4 @@
-﻿package desktop
+package desktop
 
 import (
 	"bytes"
@@ -45,6 +45,7 @@ type SubtitleManager struct {
 	verticalTitles     [2]string
 	progressBar        *widget.ProgressBar
 	progressLabel      *widget.Label // 进度百分比标签
+	statusMsgLabel     *widget.Label // 状态提示标签
 	downloadContainer  *fyne.Container
 	tipsLabel          *widget.Label
 	onVideoSelected    func(string)
@@ -52,6 +53,7 @@ type SubtitleManager struct {
 	onAudioSelected    func(string)
 	voiceoverAudioPath string
 	multiTaskResults   []taskResult // 存储多任务的结果
+	currentTaskId      string       // 当前正在运行的任务ID
 }
 
 // 用于存储每个任务的结果信息
@@ -78,6 +80,10 @@ func NewSubtitleManager(window fyne.Window) *SubtitleManager {
 		tipsLabel:         widget.NewLabel(""),
 		videoPaths:        make([]string, 0),
 	}
+}
+
+func (sm *SubtitleManager) SetStatusMsgLabel(l *widget.Label) {
+	sm.statusMsgLabel = l
 }
 
 func (sm *SubtitleManager) SetVideoSelectedCallback(callback func(string)) {
@@ -520,8 +526,24 @@ func (sm *SubtitleManager) StartTask() error {
 		return fmt.Errorf(result.Msg)
 	}
 
+	sm.currentTaskId = result.Data.TaskId
 	// 开始轮询任务状态
 	go sm.pollTaskStatus(result.Data.TaskId)
+	return nil
+}
+
+// CancelTask 取消当前任务
+func (sm *SubtitleManager) CancelTask() error {
+	if sm.currentTaskId == "" {
+		return nil
+	}
+	req := map[string]string{"task_id": sm.currentTaskId}
+	jsonData, _ := json.Marshal(req)
+	_, err := http.Post(fmt.Sprintf("http://%s:%d/api/capability/subtitleTask/cancel", config.Conf.Server.Host, config.Conf.Server.Port), "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("Failed to cancel task: %w", err)
+	}
+	sm.currentTaskId = ""
 	return nil
 }
 
@@ -616,6 +638,7 @@ func (sm *SubtitleManager) processMultipleVideos() {
 				continue
 			}
 
+			sm.currentTaskId = result.Data.TaskId
 			taskRes := sm.waitTaskCompleted(result.Data.TaskId, fileName)
 
 			sm.multiTaskResults = append(sm.multiTaskResults, taskRes)
@@ -727,6 +750,7 @@ func (sm *SubtitleManager) pollTaskStatus(taskId string) {
 			Msg   string `json:"msg"`
 			Data  struct {
 				ProcessPercent    int                  `json:"process_percent"`
+				StatusMsg         string               `json:"status_msg"`
 				SubtitleInfo      []api.SubtitleResult `json:"subtitle_info"`
 				SpeechDownloadURL string               `json:"speech_download_url"`
 				TaskId            string               `json:"task_id"`
@@ -758,6 +782,11 @@ func (sm *SubtitleManager) pollTaskStatus(taskId string) {
 
 			// 更新上次进度
 			lastPercent = result.Data.ProcessPercent
+		}
+
+		if result.Data.StatusMsg != "" && sm.statusMsgLabel != nil {
+			sm.statusMsgLabel.SetText(result.Data.StatusMsg)
+			sm.statusMsgLabel.Show()
 		}
 
 		if result.Data.ProcessPercent >= 100 {

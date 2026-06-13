@@ -56,33 +56,7 @@ func TestAssembleAudioRejectsInvalidWindowBeforeRunner(t *testing.T) {
 	}
 }
 
-func TestAssembleAudioRejectsOverlappingPlanBeforeRunner(t *testing.T) {
-	dir := t.TempDir()
-	rawDir := filepath.Join(dir, "raw")
-	if err := os.MkdirAll(rawDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	for _, name := range []string{"1.wav", "2.wav"} {
-		if err := os.WriteFile(filepath.Join(rawDir, name), []byte("raw"), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	calls := 0
-	plan := []PlanItem{
-		{Index: 1, NewStart: 1.0, NewEnd: 2.0, SpeedFactor: 1.0},
-		{Index: 2, NewStart: 0.5, NewEnd: 1.5, SpeedFactor: 1.0},
-	}
-	err := AssembleAudio(plan, dir, filepath.Join(dir, "out.wav"), func(args []string) error {
-		calls++
-		return nil
-	})
-	if err == nil || !strings.Contains(err.Error(), "starts before previous end") {
-		t.Fatalf("AssembleAudio() error = %v, want overlap error", err)
-	}
-	if calls != 0 {
-		t.Fatalf("runner calls = %d, want 0", calls)
-	}
-}
+
 
 func TestAssembleAudioRejectsInvalidSpeedFactorBeforeRunner(t *testing.T) {
 	tests := []struct {

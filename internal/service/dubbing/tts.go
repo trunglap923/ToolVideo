@@ -55,7 +55,7 @@ func GenerateRawSegments(ctx context.Context, tts types.Ttser, plan []PlanItem, 
 	return plan, nil
 }
 
-func GenerateRawChunkSegments(ctx context.Context, tts types.Ttser, plan []PlanItem, chunks []Chunk, voice, dir string, run CommandRunner, duration DurationProbe) ([]PlanItem, []Chunk, error) {
+func GenerateRawChunkSegments(ctx context.Context, tts types.Ttser, plan []PlanItem, chunks []Chunk, voice, dir string, run CommandRunner, duration DurationProbe, onProgress func(int)) ([]PlanItem, []Chunk, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -74,6 +74,9 @@ func GenerateRawChunkSegments(ctx context.Context, tts types.Ttser, plan []PlanI
 	outPlan := append([]PlanItem(nil), plan...)
 	outChunks := append([]Chunk(nil), chunks...)
 	for i := range outChunks {
+		if onProgress != nil {
+			onProgress(95 + int(float64(i)/float64(len(outChunks))*3))
+		}
 		if err := ctx.Err(); err != nil {
 			return nil, nil, err
 		}

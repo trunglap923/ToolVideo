@@ -100,6 +100,7 @@ type Dependencies struct {
 	Config      Config
 	FFmpeg      CommandRunner
 	Duration    DurationProbe
+	OnProgress  func(percent int)
 }
 
 type TextOptimizer interface {
