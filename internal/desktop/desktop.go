@@ -1,4 +1,4 @@
-package desktop
+﻿package desktop
 
 import (
 	"fmt"
@@ -59,7 +59,7 @@ func Show() {
 	logoContainer.Add(separator)
 	logoContainer.Add(slogan)
 
-	navItems := []string{"Dashboard", "LLM Settings", "Settings"}
+	navItems := []string{"Bảng điều khiển", "Cài đặt LLM", "Cài đặt"}
 	navIcons := []fyne.Resource{theme.DocumentIcon(), theme.ComputerIcon(), theme.SettingsIcon()}
 
 	var navButtons []*widget.Button
@@ -128,7 +128,7 @@ func Show() {
 			// 保存配置并切换界面
 			err := config.SaveConfig()
 			if err != nil {
-				dialog.ShowError(fmt.Errorf("Failed to save config: %v", err), myWindow)
+				dialog.ShowError(fmt.Errorf("Lưu cấu hình thất bại: %v", err), myWindow)
 			}
 
 			switch index {
@@ -186,7 +186,7 @@ func Show() {
 		statusBgColor = color.NRGBA{R: 255, G: 255, B: 255, A: 150}
 	}
 
-	statusText := canvas.NewText("Ready", statusTextColor)
+	statusText := canvas.NewText("Sẵn sàng", statusTextColor)
 	statusText.TextSize = 12
 
 	statusBarBackground := canvas.NewRectangle(statusBgColor)

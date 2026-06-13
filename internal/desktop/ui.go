@@ -27,7 +27,7 @@ import (
 
 // 创建配置界面
 func CreateConfigTab(window fyne.Window) fyne.CanvasObject {
-	pageTitle := TitleText("App Configuration")
+	pageTitle := TitleText("Cấu hình Ứng dụng")
 
 	appGroup := createAppConfigGroup()
 	serverGroup := createServerConfigGroup()
@@ -77,7 +77,7 @@ var llmModelEntryRef *widget.Entry
 var llmModelSelectRef *widget.Select
 
 func CreateLlmTab() fyne.CanvasObject {
-	pageTitle := TitleText("LLM Configuration")
+	pageTitle := TitleText("Cài đặt LLM")
 
 	// 创建LLM配置表单
 	llmConfigCard := createLlmConfigGroup()
@@ -147,8 +147,8 @@ func createApiProvidersCard() *fyne.Container {
 	}
 	// 通义千问卡片
 	qwenCard := createProviderCard(
-		"Qwen (Tongyi Qianwen)",
-		"Aliyun Large Model Service",
+		"Qwen (Thông Nghĩa Thiên Vấn)",
+		"Dịch vụ AI Model lớn Aliyun",
 		"https://bailian.console.aliyun.com/",
 		color.NRGBA{R: 99, G: 54, B: 231, A: 255}, // 通义千问紫色
 		"qwen",
@@ -162,7 +162,7 @@ func createApiProvidersCard() *fyne.Container {
 	// OpenAI卡片
 	openaiCard := createProviderCard(
 		"OpenAI",
-		"GPT Model API Service",
+		"Dịch vụ GPT API",
 		"https://platform.openai.com/",
 		color.NRGBA{R: 116, G: 195, B: 101, A: 255}, // OpenAI绿色
 		"openai",
@@ -176,7 +176,7 @@ func createApiProvidersCard() *fyne.Container {
 	// DeepSeek卡片
 	deepseekCard := createProviderCard(
 		"DeepSeek",
-		"Cost-effective AI Model",
+		"Model AI tối ưu chi phí",
 		"https://platform.deepseek.com/",
 		color.NRGBA{R: 77, G: 107, B: 254, A: 255}, // DeepSeek蓝色
 		"deepseek",
@@ -189,8 +189,8 @@ func createApiProvidersCard() *fyne.Container {
 
 	// 新增自定义供应商卡片
 	addProviderCard := createProviderCard(
-		"Add",
-		"Add Custom Provider",
+		"Thêm mới",
+		"Thêm Nhà cung cấp Tùy chỉnh",
 		"https://example.com/krillinai/add-provider", // 占位链接，后续可替换
 		color.NRGBA{R: 14, G: 165, B: 233, A: 255},   // 青色强调
 		"add",
@@ -208,8 +208,8 @@ func createApiProvidersCard() *fyne.Container {
 	)
 
 	return GlassmorphismCard(
-		"API Provider",
-		"Click cards below to buy API from corresponding platform",
+		"Nhà cung cấp API",
+		"Bấm vào thẻ bên dưới để mua API từ nền tảng tương ứng",
 		providersGrid,
 		GetCurrentThemeIsDark(),
 	)
@@ -397,8 +397,8 @@ func createLlmGuideCard() *fyne.Container {
 	guideLabel.Wrapping = fyne.TextWrapWord
 
 	return GlassmorphismCard(
-		"User Guide",
-		"LLM API Configuration Guide",
+		"Hướng dẫn sử dụng",
+		"Hướng dẫn cấu hình LLM API",
 		guideLabel,
 		GetCurrentThemeIsDark(),
 	)
@@ -408,7 +408,7 @@ func createLlmGuideCard() *fyne.Container {
 func parseURL(urlStr string) *url.URL {
 	u, err := url.Parse(urlStr)
 	if err != nil {
-		log.GetLogger().Error("Failed to parse URL", zap.Error(err))
+		log.GetLogger().Error("Phân tích URL thất bại", zap.Error(err))
 		return nil
 	}
 	return u
@@ -418,7 +418,7 @@ func parseURL(urlStr string) *url.URL {
 func CreateSubtitleTab(window fyne.Window) fyne.CanvasObject {
 	sm := NewSubtitleManager(window)
 
-	title1 := TitleText("Video Translation & Dubbing")
+	title1 := TitleText("Dịch thuật & Lồng tiếng Video")
 	title2 := TitleText("Video Translate & Dubbing")
 	titleContainer := container.NewVBox(title1, title2)
 
@@ -481,124 +481,124 @@ func CreateSubtitleTab(window fyne.Window) fyne.CanvasObject {
 
 // 创建应用配置组
 func createAppConfigGroup() *fyne.Container {
-	appSegmentDurationEntry := StyledEntry("Subtitle Segment Duration (mins)")
+	appSegmentDurationEntry := StyledEntry("Thời lượng chia đoạn phụ đề (phút)")
 	appSegmentDurationEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.App.SegmentDuration)))
 	appSegmentDurationEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 30 {
-			return fmt.Errorf("Please enter a number between 1 and 30")
+			return fmt.Errorf("Vui lòng nhập số từ 1 đến 30")
 		}
 		return nil
 	}
 
-	appTranscribeParallelNumEntry := StyledEntry("Transcription Parallel Count")
+	appTranscribeParallelNumEntry := StyledEntry("Số luồng chuyển ngữ song song")
 	appTranscribeParallelNumEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.App.TranscribeParallelNum)))
 	appTranscribeParallelNumEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 10 {
-			return fmt.Errorf("Please enter a number between 1 and 10")
+			return fmt.Errorf("Vui lòng nhập số từ 1 đến 10")
 		}
 		return nil
 	}
 
-	appTranslateParallelNumEntry := StyledEntry("Translation Parallel Count")
+	appTranslateParallelNumEntry := StyledEntry("Số luồng dịch song song")
 	appTranslateParallelNumEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.App.TranslateParallelNum)))
 	appTranslateParallelNumEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 20 {
-			return fmt.Errorf("Please enter a number between 1 and 20")
+			return fmt.Errorf("Vui lòng nhập số từ 1 đến 20")
 		}
 		return nil
 	}
 
-	appTranscribeMaxAttemptsEntry := StyledEntry("Transcription Max Attempts")
+	appTranscribeMaxAttemptsEntry := StyledEntry("Số lần thử chuyển ngữ tối đa")
 	appTranscribeMaxAttemptsEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.App.TranscribeMaxAttempts)))
 	appTranscribeMaxAttemptsEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 10 {
-			return fmt.Errorf("Please enter a number between 1 and 10")
+			return fmt.Errorf("Vui lòng nhập số từ 1 đến 10")
 		}
 		return nil
 	}
 
-	appTranslateMaxAttemptsEntry := StyledEntry("Translation Max Attempts")
+	appTranslateMaxAttemptsEntry := StyledEntry("Số lần thử dịch tối đa")
 	appTranslateMaxAttemptsEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.App.TranslateMaxAttempts)))
 	appTranslateMaxAttemptsEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 20 {
-			return fmt.Errorf("Please enter a number between 1 and 20")
+			return fmt.Errorf("Vui lòng nhập số từ 1 đến 20")
 		}
 		return nil
 	}
 
-	appMaxSentenceLengthEntry := StyledEntry("Max Sentence Length")
+	appMaxSentenceLengthEntry := StyledEntry("Độ dài Câu Tối đa")
 	appMaxSentenceLengthEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.App.MaxSentenceLength)))
 	appMaxSentenceLengthEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 200 {
-			return fmt.Errorf("Please enter a number between 1 and 200")
+			return fmt.Errorf("Vui lòng nhập số từ 1 đến 200")
 		}
 		return nil
 	}
 
-	appProxyEntry := StyledEntry("Network Proxy")
+	appProxyEntry := StyledEntry("Máy chủ Proxy")
 	appProxyEntry.Bind(binding.BindString(&config.Conf.App.Proxy))
 
 	form := widget.NewForm(
-		widget.NewFormItem("Segment Duration (minutes)", appSegmentDurationEntry),
-		widget.NewFormItem("Transcription Parallel Num", appTranscribeParallelNumEntry),
-		widget.NewFormItem("Translation Parallel Num", appTranslateParallelNumEntry),
-		widget.NewFormItem("Transcription Max Attempts", appTranscribeMaxAttemptsEntry),
-		widget.NewFormItem("Translation Max Attempts", appTranslateMaxAttemptsEntry),
-		widget.NewFormItem("Max Sentence Length", appMaxSentenceLengthEntry),
-		widget.NewFormItem("Network Proxy", appProxyEntry),
+		widget.NewFormItem("Thời lượng chia đoạn (phút)", appSegmentDurationEntry),
+		widget.NewFormItem("Số luồng chuyển ngữ song song", appTranscribeParallelNumEntry),
+		widget.NewFormItem("Số luồng dịch song song", appTranslateParallelNumEntry),
+		widget.NewFormItem("Số lần thử chuyển ngữ tối đa", appTranscribeMaxAttemptsEntry),
+		widget.NewFormItem("Số lần thử dịch tối đa", appTranslateMaxAttemptsEntry),
+		widget.NewFormItem("Độ dài Câu Tối đa", appMaxSentenceLengthEntry),
+		widget.NewFormItem("Máy chủ Proxy", appProxyEntry),
 	)
 
-	return GlassmorphismCard("App Config", "Basic Config", form, GetCurrentThemeIsDark())
+	return GlassmorphismCard("Cấu hình Ứng dụng", "Cài đặt Cơ bản", form, GetCurrentThemeIsDark())
 }
 
 // 创建server配置组
 func createServerConfigGroup() *fyne.Container {
-	serverHostEntry := StyledEntry("Server Address")
+	serverHostEntry := StyledEntry("Địa chỉ Máy chủ")
 	serverHostEntry.Bind(binding.BindString(&config.Conf.Server.Host))
 
-	serverPortEntry := StyledEntry("Server Port")
+	serverPortEntry := StyledEntry("Cổng Máy chủ")
 	serverPortEntry.Bind(binding.IntToString(binding.BindInt(&config.Conf.Server.Port)))
 	serverPortEntry.Validator = func(s string) error {
 		val, err := strconv.Atoi(s)
 		if err != nil {
-			return fmt.Errorf("Please enter a number")
+			return fmt.Errorf("Vui lòng nhập một số")
 		}
 		if val < 1 || val > 65535 {
-			return fmt.Errorf("Please enter a valid port between 1 and 65535")
+			return fmt.Errorf("Vui lòng nhập cổng (port) hợp lệ từ 1 đến 65535")
 		}
 		return nil
 	}
 
 	form := widget.NewForm(
-		widget.NewFormItem("Server Address", serverHostEntry),
-		widget.NewFormItem("Server Port", serverPortEntry),
+		widget.NewFormItem("Địa chỉ Máy chủ", serverHostEntry),
+		widget.NewFormItem("Cổng Máy chủ", serverPortEntry),
 	)
 
-	return GlassmorphismCard("Server Config", "API Server Settings", form, GetCurrentThemeIsDark())
+	return GlassmorphismCard("Cài đặt Máy chủ", "Cài đặt Máy chủ API", form, GetCurrentThemeIsDark())
 }
 
 // 创建LLM配置组
@@ -610,7 +610,7 @@ func createLlmConfigGroup() *fyne.Container {
 	apiKeyEntry := StyledPasswordEntry("API Key")
 	apiKeyEntry.Bind(binding.BindString(&config.Conf.Llm.ApiKey))
 
-	modelEntry := StyledEntry("Model Name")
+	modelEntry := StyledEntry("Tên Model")
 	modelEntry.Bind(binding.BindString(&config.Conf.Llm.Model))
 	llmModelEntryRef = modelEntry
 
@@ -620,16 +620,16 @@ func createLlmConfigGroup() *fyne.Container {
 			llmModelEntryRef.SetText(v)
 		}
 	})
-	modelSelect.PlaceHolder = "Select recommended model (Optional)"
+	modelSelect.PlaceHolder = "Chọn model được khuyến nghị (Không bắt buộc)"
 	llmModelSelectRef = modelSelect
 
 	form := widget.NewForm(
 		widget.NewFormItem("API Base URL", baseUrlEntry),
 		widget.NewFormItem("API Key", apiKeyEntry),
-		widget.NewFormItem("Model Name", modelEntry),
-		widget.NewFormItem("Supported Models", modelSelect),
+		widget.NewFormItem("Tên Model", modelEntry),
+		widget.NewFormItem("Các model hỗ trợ", modelSelect),
 	)
-	return GlassmorphismCard("LLM Configuration", "LLM Configuration", form, GetCurrentThemeIsDark())
+	return GlassmorphismCard("Cài đặt LLM", "Cài đặt LLM", form, GetCurrentThemeIsDark())
 }
 
 // 创建语音识别配置组
@@ -644,23 +644,23 @@ func createTranscribeConfigGroup() *fyne.Container {
 	openaiBaseUrlEntry.Bind(binding.BindString(&config.Conf.Transcribe.Openai.BaseUrl))
 	openaiApiKeyEntry := StyledPasswordEntry("API Key")
 	openaiApiKeyEntry.Bind(binding.BindString(&config.Conf.Transcribe.Openai.ApiKey))
-	openaiModelEntry := StyledEntry("Model Name")
+	openaiModelEntry := StyledEntry("Tên Model")
 	openaiModelEntry.Bind(binding.BindString(&config.Conf.Transcribe.Openai.Model))
 
-	fasterWhisperModelEntry := StyledEntry("Model Name")
+	fasterWhisperModelEntry := StyledEntry("Tên Model")
 	fasterWhisperModelEntry.Bind(binding.BindString(&config.Conf.Transcribe.Fasterwhisper.Model))
 
-	whisperKitModelEntry := StyledEntry("Model Name")
+	whisperKitModelEntry := StyledEntry("Tên Model")
 	whisperKitModelEntry.Bind(binding.BindString(&config.Conf.Transcribe.Whisperkit.Model))
 
-	whisperCppModelEntry := StyledEntry("Model Name")
+	whisperCppModelEntry := StyledEntry("Tên Model")
 	whisperCppModelEntry.Bind(binding.BindString(&config.Conf.Transcribe.Whispercpp.Model))
 
 	aliyunOssKeyIdEntry := StyledEntry("Aliyun Access Key ID")
 	aliyunOssKeyIdEntry.Bind(binding.BindString(&config.Conf.Transcribe.Aliyun.Oss.AccessKeyId))
 	aliyunOssKeySecretEntry := StyledPasswordEntry("Aliyun Access Key Secret")
 	aliyunOssKeySecretEntry.Bind(binding.BindString(&config.Conf.Transcribe.Aliyun.Oss.AccessKeySecret))
-	aliyunOssBucketEntry := StyledEntry("Aliyun OSS Bucket Name")
+	aliyunOssBucketEntry := StyledEntry("Tên Aliyun OSS Bucket")
 	aliyunOssBucketEntry.Bind(binding.BindString(&config.Conf.Transcribe.Aliyun.Oss.Bucket))
 
 	aliyunSpeechKeyIdEntry := StyledEntry("Aliyun Speech Access Key ID")
@@ -671,29 +671,29 @@ func createTranscribeConfigGroup() *fyne.Container {
 	aliyunSpeechAppKeyEntry.Bind(binding.BindString(&config.Conf.Transcribe.Aliyun.Speech.AppKey))
 
 	form := widget.NewForm(
-		widget.NewFormItem("Provider", providerSelect),
-		widget.NewFormItem("GPU Acceleration", widget.NewCheckWithData("Enable", binding.BindBool(&config.Conf.Transcribe.EnableGpuAcceleration))),
+		widget.NewFormItem("Nhà cung cấp", providerSelect),
+		widget.NewFormItem("Tăng tốc GPU", widget.NewCheckWithData("Bật", binding.BindBool(&config.Conf.Transcribe.EnableGpuAcceleration))),
 
 		widget.NewFormItem("OpenAI Base URL", openaiBaseUrlEntry),
 		widget.NewFormItem("OpenAI API Key", openaiApiKeyEntry),
-		widget.NewFormItem("OpenAI Model", openaiModelEntry),
+		widget.NewFormItem("Model OpenAI", openaiModelEntry),
 
-		widget.NewFormItem("FasterWhisper Model", fasterWhisperModelEntry),
+		widget.NewFormItem("Model FasterWhisper", fasterWhisperModelEntry),
 
-		widget.NewFormItem("WhisperKit Model", whisperKitModelEntry),
+		widget.NewFormItem("Model WhisperKit", whisperKitModelEntry),
 
-		widget.NewFormItem("WhisperCpp Model", whisperCppModelEntry),
+		widget.NewFormItem("Model WhisperCpp", whisperCppModelEntry),
 
 		widget.NewFormItem("Aliyun OSS Access Key ID", aliyunOssKeyIdEntry),
 		widget.NewFormItem("Aliyun OSS Access Key Secret", aliyunOssKeySecretEntry),
-		widget.NewFormItem("Aliyun OSS Bucket Name", aliyunOssBucketEntry),
+		widget.NewFormItem("Tên Aliyun OSS Bucket", aliyunOssBucketEntry),
 
 		widget.NewFormItem("Aliyun Speech Access Key ID", aliyunSpeechKeyIdEntry),
 		widget.NewFormItem("Aliyun Speech Access Key Secret", aliyunSpeechKeySecretEntry),
 		widget.NewFormItem("Aliyun Speech App Key", aliyunSpeechAppKeyEntry),
 	)
 
-	return GlassmorphismCard("语音识别配置 Transcribe Config", "Transcribe Config", form, GetCurrentThemeIsDark())
+	return GlassmorphismCard("语音识别配置 Transcribe Config", "Cài đặt Chuyển ngữ (STT)", form, GetCurrentThemeIsDark())
 }
 
 // 创建文本转语音配置组
@@ -708,14 +708,14 @@ func createTtsConfigGroup() *fyne.Container {
 	openaiBaseUrlEntry.Bind(binding.BindString(&config.Conf.Tts.Openai.BaseUrl))
 	openaiApiKeyEntry := StyledPasswordEntry("API Key")
 	openaiApiKeyEntry.Bind(binding.BindString(&config.Conf.Tts.Openai.ApiKey))
-	openaiModelEntry := StyledEntry("Model Name")
+	openaiModelEntry := StyledEntry("Tên Model")
 	openaiModelEntry.Bind(binding.BindString(&config.Conf.Tts.Openai.Model))
 
 	aliyunOssKeyIdEntry := StyledEntry("Aliyun Access Key ID")
 	aliyunOssKeyIdEntry.Bind(binding.BindString(&config.Conf.Tts.Aliyun.Oss.AccessKeyId))
 	aliyunOssKeySecretEntry := StyledPasswordEntry("Aliyun Access Key Secret")
 	aliyunOssKeySecretEntry.Bind(binding.BindString(&config.Conf.Tts.Aliyun.Oss.AccessKeySecret))
-	aliyunOssBucketEntry := StyledEntry("Aliyun OSS Bucket Name")
+	aliyunOssBucketEntry := StyledEntry("Tên Aliyun OSS Bucket")
 	aliyunOssBucketEntry.Bind(binding.BindString(&config.Conf.Tts.Aliyun.Oss.Bucket))
 
 	aliyunSpeechKeyIdEntry := StyledEntry("Aliyun Speech Access Key ID")
@@ -726,11 +726,11 @@ func createTtsConfigGroup() *fyne.Container {
 	aliyunSpeechAppKeyEntry.Bind(binding.BindString(&config.Conf.Tts.Aliyun.Speech.AppKey))
 
 	form := widget.NewForm(
-		widget.NewFormItem("Provider", providerSelect),
+		widget.NewFormItem("Nhà cung cấp", providerSelect),
 
 		widget.NewFormItem("OpenAI Base URL", openaiBaseUrlEntry),
 		widget.NewFormItem("OpenAI API Key", openaiApiKeyEntry),
-		widget.NewFormItem("OpenAI Model", openaiModelEntry),
+		widget.NewFormItem("Model OpenAI", openaiModelEntry),
 
 		widget.NewFormItem("Aliyun OSS Access Key ID", aliyunOssKeyIdEntry),
 		widget.NewFormItem("Aliyun OSS Access Key Secret", aliyunOssKeySecretEntry),
@@ -741,24 +741,24 @@ func createTtsConfigGroup() *fyne.Container {
 		widget.NewFormItem("Aliyun Speech App Key", aliyunSpeechAppKeyEntry),
 	)
 
-	return GlassmorphismCard("TTS Config", "文本转语音配置 TTS config", form, GetCurrentThemeIsDark())
+	return GlassmorphismCard("Cài đặt TTS (Lồng tiếng)", "文本转语音配置 TTS config", form, GetCurrentThemeIsDark())
 }
 
 // 创建视频输入容器
 func createVideoInputContainer(sm *SubtitleManager) *fyne.Container {
-	inputTypeRadio := widget.NewRadioGroup([]string{"Upload a file", "Paste a link"}, nil)
+	inputTypeRadio := widget.NewRadioGroup([]string{"Tải file lên", "Dán link"}, nil)
 	inputTypeRadio.Horizontal = true
 	inputTypeContainer := container.NewHBox(
 		inputTypeRadio,
 	)
 
-	urlEntry := StyledEntry("Paste a link here")
+	urlEntry := StyledEntry("Dán link vào đây")
 	urlEntry.Hide()
 	urlEntry.OnChanged = func(text string) {
 		sm.SetVideoUrl(text)
 	}
 
-	selectButton := PrimaryButton("Select Video Files", theme.FolderOpenIcon(), sm.ShowFileDialog)
+	selectButton := PrimaryButton("Chọn File Video", theme.FolderOpenIcon(), sm.ShowFileDialog)
 
 	selectedVideoLabel := widget.NewLabel("")
 	selectedVideoLabel.Hide()
@@ -766,7 +766,7 @@ func createVideoInputContainer(sm *SubtitleManager) *fyne.Container {
 	sm.SetVideoSelectedCallback(func(path string) { // 设置视频地址+控制信息展示
 		if path != "" {
 			sm.SetVideoUrl(path)
-			selectedVideoLabel.SetText("Selected: " + filepath.Base(path))
+			selectedVideoLabel.SetText("Đã chọn: " + filepath.Base(path))
 			selectedVideoLabel.Show()
 		} else {
 			selectedVideoLabel.Hide()
@@ -782,7 +782,7 @@ func createVideoInputContainer(sm *SubtitleManager) *fyne.Container {
 				fileNames = append(fileNames, filepath.Base(path))
 			}
 
-			displayText := fmt.Sprintf("Selected %d files:\n", len(paths))
+			displayText := fmt.Sprintf("Đã chọn %d file:\n", len(paths))
 			for i, name := range fileNames {
 				displayText += fmt.Sprintf("%d. %s\n", i+1, name)
 			}
@@ -797,9 +797,9 @@ func createVideoInputContainer(sm *SubtitleManager) *fyne.Container {
 	videoInputContainer := container.NewVBox()
 	videoInputContainer.Objects = []fyne.CanvasObject{selectButton, selectedVideoLabel}
 
-	inputTypeRadio.SetSelected("Upload a file")
+	inputTypeRadio.SetSelected("Tải file lên")
 	inputTypeRadio.OnChanged = func(value string) {
-		if value == "Upload a file" {
+		if value == "Tải file lên" {
 			urlEntry.Hide()
 			selectButton.Show()
 			selectedVideoLabel.Show()
@@ -819,24 +819,24 @@ func createVideoInputContainer(sm *SubtitleManager) *fyne.Container {
 		container.NewPadded(videoInputContainer),
 	)
 
-	return GlassmorphismCard("1. Select Video", "", content, GetCurrentThemeIsDark())
+	return GlassmorphismCard("1. Chọn Video", "", content, GetCurrentThemeIsDark())
 }
 
 // 创建字幕设置卡片
 func createSubtitleSettingsCard(sm *SubtitleManager) *fyne.Container {
 	positionSelect := widget.NewSelect([]string{
-		"Translation Above",
-		"Translation Below",
+		"Dịch thuật nằm trên",
+		"Dịch thuật nằm dưới",
 	}, func(value string) {
-		if value == "Translation Above" {
+		if value == "Dịch thuật nằm trên" {
 			sm.SetBilingualPosition(1)
 		} else {
 			sm.SetBilingualPosition(2)
 		}
 	})
-	positionSelect.SetSelected("Translation Above")
+	positionSelect.SetSelected("Dịch thuật nằm trên")
 
-	bilingualCheck := widget.NewCheck("Enable Bilingual Subtitles", func(checked bool) {
+	bilingualCheck := widget.NewCheck("Bật Phụ đề Song ngữ", func(checked bool) {
 		sm.SetBilingualEnabled(checked)
 		if checked {
 			positionSelect.Enable()
@@ -858,12 +858,12 @@ func createSubtitleSettingsCard(sm *SubtitleManager) *fyne.Container {
 
 	langContainer := container.NewVBox(
 		container.NewHBox(
-			widget.NewLabel("Original Language:"),
+			widget.NewLabel("Ngôn ngữ Gốc:"),
 			StyledSelect([]string{
-				"Simplified Chinese", "English", "Japanese", "Türkçe", "Deutsch", "한국어", "Русский язык", "Bahasa Melayu",
+				"Tiếng Trung (Giản thể)", "English", "Tiếng Nhật", "Türkçe", "Deutsch", "한국어", "Русский язык", "Bahasa Melayu",
 			}, func(value string) {
 				sourceLangMap := map[string]string{
-					"Simplified Chinese": "zh_cn", "English": "en", "Japanese": "ja",
+					"Tiếng Trung (Giản thể)": "zh_cn", "English": "en", "Tiếng Nhật": "ja",
 					"Türkçe": "tr", "Deutsch": "de", "한국어": "ko", "Русский язык": "ru",
 					"Bahasa Melayu": "ms",
 				}
@@ -871,16 +871,16 @@ func createSubtitleSettingsCard(sm *SubtitleManager) *fyne.Container {
 			}),
 		),
 		container.NewHBox(
-			widget.NewLabel("Translate To:"),
+			widget.NewLabel("Dịch sang:"),
 			targetLangSelector,
 		),
 	)
 
 	// 设置默认语言
 	langContainer.Objects[0].(*fyne.Container).Objects[1].(*widget.Select).SetSelected("English")
-	langContainer.Objects[1].(*fyne.Container).Objects[1].(*widget.Select).SetSelected("Simplified Chinese")
+	langContainer.Objects[1].(*fyne.Container).Objects[1].(*widget.Select).SetSelected("Tiếng Trung (Giản thể)")
 
-	fillerCheck := widget.NewCheck("Enable Tone Word Filtering", func(checked bool) {
+	fillerCheck := widget.NewCheck("Bật Lọc Từ cảm thán", func(checked bool) {
 		sm.SetFillerFilter(checked)
 	})
 	fillerCheck.SetChecked(true)
@@ -891,23 +891,23 @@ func createSubtitleSettingsCard(sm *SubtitleManager) *fyne.Container {
 		positionSelect,
 	)
 
-	return ModernCard("2. Subtitle Settings", content, GetCurrentThemeIsDark())
+	return ModernCard("2. Cài đặt Phụ đề", content, GetCurrentThemeIsDark())
 }
 
 // 创建配音设置卡片
 func createVoiceSettingsCard(sm *SubtitleManager) *fyne.Container {
 	voiceCodeEntry := widget.NewEntry()
-	voiceCodeEntry.SetPlaceHolder("Enter voice code")
+	voiceCodeEntry.SetPlaceHolder("Nhập mã giọng nói")
 	voiceCodeEntry.OnChanged = func(text string) {
 		sm.SetTtsVoiceCode(text)
 	}
 	voiceCodeEntry.Disable()
 
 	// 音色克隆功能 - 当前支持阿里云TTS，未来可扩展其他提供商
-	audioSampleButton := SecondaryButton("Select Voice Clone Sample (Aliyun TTS Supported)", theme.MediaMusicIcon(), sm.ShowAudioFileDialog)
+	audioSampleButton := SecondaryButton("Chọn Mẫu Clone Giọng nói (Hỗ trợ bởi Aliyun TTS)", theme.MediaMusicIcon(), sm.ShowAudioFileDialog)
 	audioSampleButton.Disable()
 
-	voiceoverCheck := widget.NewCheck("Apply Dubbing", func(checked bool) {
+	voiceoverCheck := widget.NewCheck("Áp dụng Lồng tiếng", func(checked bool) {
 		sm.SetVoiceoverEnabled(checked)
 		if checked {
 			voiceCodeEntry.Enable()
@@ -923,28 +923,28 @@ func createVoiceSettingsCard(sm *SubtitleManager) *fyne.Container {
 		container.NewHBox(container.NewBorder(voiceCodeEntry, nil, nil, audioSampleButton)),
 	)
 
-	return ModernCard("3. Dubbing Settings", grid, GetCurrentThemeIsDark())
+	return ModernCard("3. Cài đặt Lồng tiếng", grid, GetCurrentThemeIsDark())
 }
 
 // 视频合成卡片
 func createEmbedSettingsCard(sm *SubtitleManager) *fyne.Container {
-	embedCheck := widget.NewCheck("Composite", nil)
+	embedCheck := widget.NewCheck("Ghép/Render", nil)
 
 	embedTypeSelect := StyledSelect([]string{
-		"Landscape Output (16:9)", "Portrait Output (9:16)", "Landscape + Portrait",
+		"Xuất video Ngang (16:9)", "Xuất video Dọc (9:16)", "Ngang + Dọc",
 	}, nil)
 	embedTypeSelect.Disable()
 
-	mainTitleEntry := StyledEntry("Enter main title")
-	subTitleEntry := StyledEntry("Enter sub title")
+	mainTitleEntry := StyledEntry("Nhập tiêu đề chính")
+	subTitleEntry := StyledEntry("Nhập tiêu đề phụ")
 
 	titleInputContainer := container.NewVBox(
 		container.NewGridWithColumns(2,
-			widget.NewLabel("Main Title:"),
+			widget.NewLabel("Tiêu đề chính:"),
 			mainTitleEntry,
 		),
 		container.NewGridWithColumns(2,
-			widget.NewLabel("Subtitle:"),
+			widget.NewLabel("Phụ đề:"),
 			subTitleEntry,
 		),
 	)
@@ -953,7 +953,7 @@ func createEmbedSettingsCard(sm *SubtitleManager) *fyne.Container {
 	embedCheck.OnChanged = func(checked bool) {
 		if checked {
 			embedTypeSelect.Enable()
-			embedTypeSelect.SetSelected("Landscape Output (16:9)")
+			embedTypeSelect.SetSelected("Xuất video Ngang (16:9)")
 		} else {
 			embedTypeSelect.Disable()
 			sm.SetEmbedSubtitle("none")
@@ -962,13 +962,13 @@ func createEmbedSettingsCard(sm *SubtitleManager) *fyne.Container {
 
 	embedTypeSelect.OnChanged = func(value string) {
 		switch value {
-		case "Landscape Output (16:9)":
+		case "Xuất video Ngang (16:9)":
 			titleInputContainer.Hide()
 			sm.SetEmbedSubtitle("horizontal")
-		case "Portrait Output (9:16)":
+		case "Xuất video Dọc (9:16)":
 			titleInputContainer.Show()
 			sm.SetEmbedSubtitle("vertical")
-		case "Landscape + Portrait":
+		case "Ngang + Dọc":
 			titleInputContainer.Show()
 			sm.SetEmbedSubtitle("all")
 		}
@@ -981,7 +981,7 @@ func createEmbedSettingsCard(sm *SubtitleManager) *fyne.Container {
 		container.NewPadded(titleInputContainer),
 	)
 
-	return ModernCard("Composition Settings", mainContainer, GetCurrentThemeIsDark())
+	return ModernCard("Cài đặt Xuất Video", mainContainer, GetCurrentThemeIsDark())
 }
 
 // 创建进度和下载区域
@@ -1048,7 +1048,7 @@ func createProgressAndDownloadArea(sm *SubtitleManager) (*widget.ProgressBar, *f
 
 // 开始按钮
 func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContainer *fyne.Container, embedSettingsCard *fyne.Container, progress *widget.ProgressBar, downloadContainer *fyne.Container) *widget.Button {
-	btn := widget.NewButtonWithIcon("Start Translating", theme.MediaPlayIcon(), nil)
+	btn := widget.NewButtonWithIcon("Bắt đầu Dịch", theme.MediaPlayIcon(), nil)
 	btn.Importance = widget.HighImportance
 
 	btn.OnTapped = func() {
@@ -1087,7 +1087,7 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 		downloadContainer.Hide()
 
 		if sm.GetVideoUrl() == "" {
-			inputType := "Local Video"
+			inputType := "Video Nội bộ"
 
 			if videoInputContainer != nil && len(videoInputContainer.Objects) > 0 {
 				for i := 0; i < len(videoInputContainer.Objects); i++ {
@@ -1103,10 +1103,10 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 				}
 			}
 
-			if inputType == "Local Video" {
-				dialog.ShowError(fmt.Errorf("Please select a video file first"), window)
+			if inputType == "Video Nội bộ" {
+				dialog.ShowError(fmt.Errorf("Vui lòng chọn một file video trước"), window)
 			} else {
-				dialog.ShowError(fmt.Errorf("Please enter a video URL"), window)
+				dialog.ShowError(fmt.Errorf("Vui lòng nhập link video URL"), window)
 			}
 			progress.Hide()
 			return
@@ -1115,7 +1115,7 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 		err := config.CheckConfig()
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Incorrect configuration: %v", err), window)
-			log.GetLogger().Error("Incorrect configuration", zap.Error(err))
+			log.GetLogger().Error("Cấu hình không chính xác", zap.Error(err))
 			progress.Hide()
 			return
 		}
@@ -1123,7 +1123,7 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 		err = deps.CheckDependency()
 		if err != nil {
 			dialog.ShowError(fmt.Errorf("Failed to prepare dependencies: %v", err), window)
-			log.GetLogger().Error("Failed to prepare dependencies", zap.Error(err))
+			log.GetLogger().Error("Chuẩn bị môi trường thất bại", zap.Error(err))
 			progress.Hide()
 			return
 		}
@@ -1132,7 +1132,7 @@ func createStartButton(window fyne.Window, sm *SubtitleManager, videoInputContai
 		if config.ConfigBackup != config.Conf {
 			if err = server.StopBackend(); err != nil {
 				dialog.ShowError(fmt.Errorf("Failed to stop backend service: %v", err), window)
-				log.GetLogger().Error("Failed to stop backend service", zap.Error(err))
+				log.GetLogger().Error("Dừng dịch vụ backend thất bại", zap.Error(err))
 				progress.Hide()
 				return
 			}

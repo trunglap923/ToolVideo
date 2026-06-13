@@ -1,4 +1,4 @@
-package api
+﻿package api
 
 import (
 	"fmt"
@@ -74,18 +74,18 @@ func GetSubtitleTaskStatus(taskId string) (*TaskStatus, error) {
 	// 获取任务状态
 	status, err := getTaskStatus(taskId)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to get task status: %v", err)
+		return nil, fmt.Errorf("Lấy trạng thái nhiệm vụ thất bại: %v", err)
 	}
 
 	// 如果任务完成，添加下载链接
 	if status.ProcessPercent >= 100 {
 		status.SubtitleInfo = []SubtitleResult{
 			{
-				Name:        "subtitle.srt",
+				Name:        "phude.srt",
 				DownloadURL: fmt.Sprintf("/tasks/%s/output/subtitle.srt", taskId),
 			},
 			{
-				Name:        "subtitle.ass",
+				Name:        "phude.ass",
 				DownloadURL: fmt.Sprintf("/tasks/%s/output/subtitle.ass", taskId),
 			},
 		}

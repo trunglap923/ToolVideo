@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"go.uber.org/zap"
@@ -19,16 +19,16 @@ func main() {
 	}
 
 	if err = config.CheckConfig(); err != nil {
-		log.GetLogger().Error("Failed to load config", zap.Error(err))
+		log.GetLogger().Error("Tải cấu hình thất bại", zap.Error(err))
 		return
 	}
 
 	if err = deps.CheckDependency(); err != nil {
-		log.GetLogger().Error("Failed to prepare dependencies", zap.Error(err))
+		log.GetLogger().Error("Chuẩn bị môi trường thất bại", zap.Error(err))
 		return
 	}
 	if err = server.StartBackend(); err != nil {
-		log.GetLogger().Error("Failed to start backend service", zap.Error(err))
+		log.GetLogger().Error("Khởi động dịch vụ backend thất bại", zap.Error(err))
 		os.Exit(1)
 	}
 }

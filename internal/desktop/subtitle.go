@@ -108,8 +108,8 @@ func (sm *SubtitleManager) addVideoFile(continueAdding bool) {
 			if len(sm.videoPaths) > 0 {
 				// 询问是否上传
 				confirmDialog := dialog.NewConfirm(
-					"Upload File",
-					fmt.Sprintf("Selected %d files, start upload?", len(sm.videoPaths)),
+					"Tải File Lên",
+					fmt.Sprintf("Đã chọn %d file, bắt đầu tải lên?", len(sm.videoPaths)),
 					func(confirm bool) {
 						if confirm {
 							sm.uploadMultipleFiles()
@@ -128,14 +128,14 @@ func (sm *SubtitleManager) addVideoFile(continueAdding bool) {
 
 		// 询问是否继续添加
 		// 构建已选文件消息
-		filesMessage := fmt.Sprintf("Selected %d files:\n", len(sm.videoPaths))
+		filesMessage := fmt.Sprintf("Đã chọn %d file:\n", len(sm.videoPaths))
 		for i, path := range sm.videoPaths {
 			filesMessage += fmt.Sprintf("%d. %s\n", i+1, filepath.Base(path))
 		}
-		filesMessage += "\nContinue adding more files?"
+		filesMessage += "\nTiếp tục thêm file khác không?"
 
 		confirmDialog := dialog.NewConfirm(
-			"Continue selecting",
+			"Tiếp tục chọn",
 			filesMessage,
 			func(cont bool) {
 				if cont {
@@ -162,12 +162,12 @@ func (sm *SubtitleManager) uploadMultipleFiles() {
 	}
 
 	// 创建进度对话框
-	filesList := fmt.Sprintf("Uploading %d files:\n", len(sm.videoPaths))
+	filesList := fmt.Sprintf("Đang tải lên %d file:\n", len(sm.videoPaths))
 	for i, path := range sm.videoPaths {
 		filesList += fmt.Sprintf("%d. %s\n", i+1, filepath.Base(path))
 	}
 
-	progressDialog := dialog.NewProgress("Uploading", filesList, sm.window)
+	progressDialog := dialog.NewProgress("Đang tải lên", filesList, sm.window)
 	progressDialog.Show()
 
 	go func() {
@@ -251,12 +251,12 @@ func (sm *SubtitleManager) uploadMultipleFiles() {
 		}
 
 		// 构建消息
-		successMessage := fmt.Sprintf("Successfully uploaded %d files:\n", len(result.Data.FilePath))
+		successMessage := fmt.Sprintf("Đã tải lên thành công %d file:\n", len(result.Data.FilePath))
 		for i, url := range result.Data.FilePath {
 			successMessage += fmt.Sprintf("%d. %s\n", i+1, filepath.Base(url))
 		}
 
-		dialog.ShowInformation("Uploaded successfully", successMessage, sm.window)
+		dialog.ShowInformation("Tải lên thành công", successMessage, sm.window)
 	}()
 }
 
@@ -562,7 +562,7 @@ func (sm *SubtitleManager) processMultipleVideos() {
 				if len(displayName) > 20 {
 					displayName = displayName[:17] + "..."
 				}
-				sm.progressLabel.SetText(fmt.Sprintf("Processing: %d/%d\n%s", i+1, len(sm.videoPaths), displayName))
+				sm.progressLabel.SetText(fmt.Sprintf("Đang xử lý: %d/%d\n%s", i+1, len(sm.videoPaths), displayName))
 				sm.progressLabel.Show()
 			}
 
@@ -586,13 +586,13 @@ func (sm *SubtitleManager) processMultipleVideos() {
 
 			jsonData, err := json.Marshal(task)
 			if err != nil {
-				log.GetLogger().Error("Failed to serialize task data", zap.Error(err))
+				log.GetLogger().Error("Phân tích dữ liệu nhiệm vụ thất bại", zap.Error(err))
 				continue
 			}
 
 			resp, err := http.Post(fmt.Sprintf("http://%s:%d/api/capability/subtitleTask", config.Conf.Server.Host, config.Conf.Server.Port), "application/json", bytes.NewBuffer(jsonData))
 			if err != nil {
-				log.GetLogger().Error("Failed to send task request", zap.Error(err))
+				log.GetLogger().Error("Gửi yêu cầu nhiệm vụ thất bại", zap.Error(err))
 				continue
 			}
 
@@ -606,13 +606,13 @@ func (sm *SubtitleManager) processMultipleVideos() {
 
 			if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 				resp.Body.Close()
-				log.GetLogger().Error("Failed to parse response", zap.Error(err))
+				log.GetLogger().Error("Phân tích phản hồi thất bại", zap.Error(err))
 				continue
 			}
 			resp.Body.Close()
 
 			if result.Error != 0 && result.Error != 200 {
-				log.GetLogger().Error("Task creation failed", zap.String("msg", result.Msg))
+				log.GetLogger().Error("Tạo nhiệm vụ thất bại", zap.String("msg", result.Msg))
 				continue
 			}
 
@@ -627,7 +627,7 @@ func (sm *SubtitleManager) processMultipleVideos() {
 		sm.displayMultiTaskDownloadLinks()
 
 		// 完成所有视频处理
-		dialog.ShowInformation("Done", "All videos processed", sm.window)
+		dialog.ShowInformation("Xong", "Tất cả video đã được xử lý", sm.window)
 	}()
 }
 
@@ -666,7 +666,7 @@ func (sm *SubtitleManager) waitTaskCompleted(taskId string, originalFileName str
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			log.GetLogger().Error("Failed to parse response", zap.Error(err))
+			log.GetLogger().Error("Phân tích phản hồi thất bại", zap.Error(err))
 			resp.Body.Close()
 			time.Sleep(2 * time.Second)
 			continue
@@ -734,7 +734,7 @@ func (sm *SubtitleManager) pollTaskStatus(taskId string) {
 		}
 
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			log.GetLogger().Error("Failed to parse response", zap.Error(err))
+			log.GetLogger().Error("Phân tích phản hồi thất bại", zap.Error(err))
 			resp.Body.Close()
 			dialog.ShowError(fmt.Errorf("Failed to get task status: %v", err), sm.window)
 			return
@@ -773,7 +773,7 @@ func (sm *SubtitleManager) pollTaskStatus(taskId string) {
 
 			sm.displayMultiTaskDownloadLinks()
 
-			sm.tipsLabel.SetText(fmt.Sprintf("If you need to view the synthesized video or transcript, please check the /tasks/%s/output directory.", result.Data.TaskId))
+			sm.tipsLabel.SetText(fmt.Sprintf("Nếu bạn cần xem video đã tạo hoặc bản ghi, vui lòng kiểm tra thư mục /tasks/%s/output.", result.Data.TaskId))
 			sm.tipsLabel.Show()
 
 			return
@@ -805,7 +805,7 @@ func (sm *SubtitleManager) displayMultiTaskDownloadLinks() {
 			downloadURL := result.DownloadURL
 			fileName := result.Name
 
-			btn := widget.NewButton("Download"+fileName, func(url string) func() {
+			btn := widget.NewButton("Tải xuống"+fileName, func(url string) func() {
 				return func() {
 					go sm.downloadFile(url, filepath.Base(url))
 				}
@@ -818,7 +818,7 @@ func (sm *SubtitleManager) displayMultiTaskDownloadLinks() {
 			url := taskRes.speechDownloadURL
 			ttsFileName := fmt.Sprintf("tts_%s.wav", filepath.Base(taskRes.speechDownloadURL))
 
-			speechBtn := widget.NewButton("Download dubbing file", func(u, f string) func() {
+			speechBtn := widget.NewButton("Tải file lồng tiếng", func(u, f string) func() {
 				return func() {
 					go sm.downloadFile(u, f)
 				}
@@ -827,7 +827,7 @@ func (sm *SubtitleManager) displayMultiTaskDownloadLinks() {
 			taskContainer.Add(speechBtn)
 		}
 
-		taskTip := widget.NewLabel(fmt.Sprintf("View video or transcript at: /tasks/%s/output", taskRes.taskId))
+		taskTip := widget.NewLabel(fmt.Sprintf("Xem video hoặc bản ghi tại: /tasks/%s/output", taskRes.taskId))
 		taskTip.Alignment = fyne.TextAlignCenter
 		taskContainer.Add(taskTip)
 
@@ -849,7 +849,7 @@ func (sm *SubtitleManager) displayMultiTaskDownloadLinks() {
 func (sm *SubtitleManager) downloadFile(downloadURL, suggestedFileName string) {
 	resp, err := http.Get(fmt.Sprintf("http://%s:%d", config.Conf.Server.Host, config.Conf.Server.Port) + downloadURL)
 	if err != nil {
-		dialog.ShowError(fmt.Errorf("Download failed: %v", err), sm.window)
+		dialog.ShowError(fmt.Errorf("Tải xuống thất bại: %v", err), sm.window)
 		return
 	}
 
@@ -866,11 +866,11 @@ func (sm *SubtitleManager) downloadFile(downloadURL, suggestedFileName string) {
 
 		_, err = io.Copy(writer, resp.Body)
 		if err != nil {
-			dialog.ShowError(fmt.Errorf("Failed to save file: %v", err), sm.window)
+			dialog.ShowError(fmt.Errorf("Lưu file thất bại: %v", err), sm.window)
 			return
 		}
 
-		dialog.ShowInformation("Download completed", "File saved", sm.window)
+		dialog.ShowInformation("Tải xuống hoàn tất", "File đã được lưu", sm.window)
 	}, sm.window)
 
 	saveDialog.SetFileName(suggestedFileName)

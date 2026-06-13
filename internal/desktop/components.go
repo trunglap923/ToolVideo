@@ -1,4 +1,4 @@
-package desktop
+﻿package desktop
 
 import (
 	"fmt"
@@ -220,7 +220,7 @@ func StyledCard(title string, content fyne.CanvasObject) *fyne.Container {
 func StyledSelect(options []string, selected func(string)) *widget.Select {
 	sel := widget.NewSelect(options, selected)
 
-	// Increase width for options containing "Translated Subtitles"
+	// Increase width for options containing "Phụ đề đã dịch"
 	for _, option := range options {
 		if len(option) > 8 {
 			extraOptions := make([]string, len(options))
@@ -336,7 +336,7 @@ func SwitchContent(container *fyne.Container, content fyne.CanvasObject, duratio
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
-					fmt.Println("Error switching content:", r)
+					fmt.Println("Lỗi chuyển đổi nội dung:", r)
 				}
 			}()
 
@@ -407,10 +407,10 @@ func ThemeToggleButton(isDark bool, onToggle func()) *widget.Button {
 
 	if isDark {
 		icon = theme.ColorPaletteIcon()
-		text = "Light Mode"
+		text = "Chế độ Sáng"
 	} else {
 		icon = theme.ColorPaletteIcon()
-		text = "Dark Mode"
+		text = "Chế độ Tối"
 	}
 
 	btn := widget.NewButtonWithIcon(text, icon, onToggle)

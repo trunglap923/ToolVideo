@@ -5,6 +5,9 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"krillin-ai/log"
+	"go.uber.org/zap"
 )
 
 func ParseSRTFile(path string) ([]Cue, error) {
@@ -52,7 +55,8 @@ func ParseSRTFile(path string) ([]Cue, error) {
 			return nil, fmt.Errorf("cue %d end: %w", index, err)
 		}
 		if end <= start {
-			return nil, fmt.Errorf("cue %d invalid duration: start=%s end=%s", index, FormatTimestamp(start), FormatTimestamp(end))
+			log.GetLogger().Warn("Bỏ qua phụ đề lỗi do thời lượng <= 0", zap.Int("cue", index), zap.Float64("start", start), zap.Float64("end", end))
+			continue
 		}
 
 		cues = append(cues, Cue{

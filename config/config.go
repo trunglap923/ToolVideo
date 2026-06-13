@@ -1,4 +1,4 @@
-package config
+﻿package config
 
 import (
 	"errors"
@@ -180,34 +180,34 @@ func validateConfig() error {
 	switch Conf.Transcribe.Provider {
 	case "openai":
 		if Conf.Transcribe.Openai.ApiKey == "" {
-			return errors.New("OpenAI API Key is required when using OpenAI transcription service")
+			return errors.New("Cần có OpenAI API Key khi dùng dịch vụ chuyển ngữ OpenAI")
 		}
 	case "fasterwhisper":
 		if Conf.Transcribe.Fasterwhisper.Model != "tiny" && Conf.Transcribe.Fasterwhisper.Model != "medium" && Conf.Transcribe.Fasterwhisper.Model != "large-v2" {
-			return errors.New("fasterwhisper is enabled, but the model selection is incorrect. Please check the configuration")
+			return errors.New("FasterWhisper đã bật nhưng chọn sai model. Vui lòng kiểm tra lại cấu hình")
 		}
 	case "whisperkit":
 		if runtime.GOOS != "darwin" {
-			log.GetLogger().Error("whisperkit only supports macos", zap.String("current OS", runtime.GOOS))
-			return fmt.Errorf("whisperkit only supports macos")
+			log.GetLogger().Error("Whisperkit chỉ hỗ trợ MacOS", zap.String("current OS", runtime.GOOS))
+			return fmt.Errorf("Whisperkit chỉ hỗ trợ MacOS")
 		}
 		if Conf.Transcribe.Whisperkit.Model != "large-v2" {
-			return errors.New("whisperkit is enabled, but the model selection is incorrect. Please check the configuration")
+			return errors.New("Whisperkit đã bật nhưng chọn sai model. Vui lòng kiểm tra lại cấu hình")
 		}
 	case "whispercpp":
 		if runtime.GOOS != "windows" { // 当前先仅支持win，模型仅支持large-v2，最小化产品
-			log.GetLogger().Error("whispercpp only support windows", zap.String("current os", runtime.GOOS))
-			return fmt.Errorf("whispercpp only support windows")
+			log.GetLogger().Error("Whispercpp chỉ hỗ trợ Windows", zap.String("current os", runtime.GOOS))
+			return fmt.Errorf("Whispercpp chỉ hỗ trợ Windows")
 		}
 		if Conf.Transcribe.Whispercpp.Model != "large-v2" {
-			return errors.New("whisper.cpp is enabled, but the model selection is incorrect. Please check the configuration")
+			return errors.New("Whisper.cpp đã bật nhưng chọn sai model. Vui lòng kiểm tra lại cấu hình")
 		}
 	case "aliyun":
 		if Conf.Transcribe.Aliyun.Speech.AccessKeyId == "" || Conf.Transcribe.Aliyun.Speech.AccessKeySecret == "" || Conf.Transcribe.Aliyun.Speech.AppKey == "" {
-			return errors.New("Aliyun speech service requires configuration of related keys")
+			return errors.New("Dịch vụ giọng nói Aliyun yêu cầu phải cấu hình các Key tương ứng")
 		}
 	default:
-		return errors.New("Unsupported transcription provider")
+		return errors.New("Không hỗ trợ nhà cung cấp chuyển ngữ này")
 	}
 
 	return nil

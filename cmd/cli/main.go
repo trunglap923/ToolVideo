@@ -1,4 +1,4 @@
-package main
+﻿package main
 
 import (
 	"context"
@@ -36,7 +36,7 @@ func main() {
 			Error: &pipeline.Error{
 				Kind:    pipeline.ErrorKindUsage,
 				Code:    "config_not_found",
-				Message: "Config file not found",
+				Message: "Không tìm thấy file cấu hình",
 			},
 		})
 	}

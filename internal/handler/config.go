@@ -155,7 +155,7 @@ func (h Handler) GetConfig(c *gin.Context) {
 
 	response.R(c, response.Response{
 		Error: 0,
-		Msg:   "Successfully fetched config",
+		Msg:   "Lấy cấu hình thành công",
 		Data:  configResponse,
 	})
 }
@@ -167,7 +167,7 @@ func (h Handler) UpdateConfig(c *gin.Context) {
 		log.GetLogger().Error("UpdateConfig ShouldBindJSON err", zap.Error(err))
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "Parameter error: " + err.Error(),
+			Msg:   "Lỗi tham số: " + err.Error(),
 			Data:  nil,
 		})
 		return
@@ -234,7 +234,7 @@ func (h Handler) UpdateConfig(c *gin.Context) {
 		config.Conf = config.ConfigBackup
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "Configuration validation failed: " + err.Error(),
+			Msg:   "Xác thực cấu hình thất bại: " + err.Error(),
 			Data:  nil,
 		})
 		return
@@ -251,10 +251,10 @@ func (h Handler) UpdateConfig(c *gin.Context) {
 		return
 	}
 
-	log.GetLogger().Info("Config updated successfully")
+	log.GetLogger().Info("Cập nhật cấu hình thành công")
 	response.R(c, response.Response{
 		Error: 0,
-		Msg:   "Config updated successfully",
+		Msg:   "Cập nhật cấu hình thành công",
 		Data:  nil,
 	})
 }

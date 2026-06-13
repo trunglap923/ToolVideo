@@ -19,7 +19,7 @@ func (h Handler) StartSubtitleTask(c *gin.Context) {
 		log.GetLogger().Error("StartSubtitleTask ShouldBindJSON err", zap.Error(err))
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "Parameter error",
+			Msg:   "Lỗi tham số",
 			Data:  nil,
 		})
 		return
@@ -46,7 +46,7 @@ func (h Handler) StartSubtitleTask(c *gin.Context) {
 	}
 	response.R(c, response.Response{
 		Error: 0,
-		Msg:   "Success",
+		Msg:   "Thành công",
 		Data:  data,
 	})
 }
@@ -56,7 +56,7 @@ func (h Handler) GetSubtitleTask(c *gin.Context) {
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "Parameter error",
+			Msg:   "Lỗi tham số",
 			Data:  nil,
 		})
 		return
@@ -81,7 +81,7 @@ func (h Handler) GetSubtitleTask(c *gin.Context) {
 	}
 	response.R(c, response.Response{
 		Error: 0,
-		Msg:   "Success",
+		Msg:   "Thành công",
 		Data:  data,
 	})
 }
@@ -91,7 +91,7 @@ func (h Handler) UploadFile(c *gin.Context) {
 	if err != nil {
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "Failed to get file",
+			Msg:   "Lấy file thất bại",
 			Data:  nil,
 		})
 		return
@@ -101,7 +101,7 @@ func (h Handler) UploadFile(c *gin.Context) {
 	if len(files) == 0 {
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "No file uploaded",
+			Msg:   "Chưa upload file nào",
 			Data:  nil,
 		})
 		return
@@ -114,7 +114,7 @@ func (h Handler) UploadFile(c *gin.Context) {
 		if err := c.SaveUploadedFile(file, savePath); err != nil {
 			response.R(c, response.Response{
 				Error: -1,
-				Msg:   "Failed to save file: " + file.Filename,
+				Msg:   "Lưu file thất bại: " + file.Filename,
 				Data:  nil,
 			})
 			return
@@ -124,7 +124,7 @@ func (h Handler) UploadFile(c *gin.Context) {
 
 	response.R(c, response.Response{
 		Error: 0,
-		Msg:   "File uploaded successfully",
+		Msg:   "Upload file thành công",
 		Data:  gin.H{"file_path": savedFiles},
 	})
 }
@@ -134,7 +134,7 @@ func (h Handler) DownloadFile(c *gin.Context) {
 	if requestedFile == "" {
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "File path is empty",
+			Msg:   "Đường dẫn file trống",
 			Data:  nil,
 		})
 		return
@@ -144,7 +144,7 @@ func (h Handler) DownloadFile(c *gin.Context) {
 	if _, err := os.Stat(localFilePath); os.IsNotExist(err) {
 		response.R(c, response.Response{
 			Error: -1,
-			Msg:   "File does not exist",
+			Msg:   "File không tồn tại",
 			Data:  nil,
 		})
 		return
