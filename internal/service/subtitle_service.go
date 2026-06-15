@@ -361,6 +361,21 @@ func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTask
 		}
 	}
 
+	// Try to read dubbing_plan.json to get audio metadata
+	planPath := filepath.Join(baseDir, dubbing.DubbingDirName, dubbing.DubbingPlanFileName)
+	if planBytes, err := os.ReadFile(planPath); err == nil {
+		var plan []dubbing.PlanItem
+		if json.Unmarshal(planBytes, &plan) == nil {
+			for i, p := range plan {
+				if i < len(subtitles) && p.ChunkID > 0 {
+					// Audio file generated in segments/raw/chunk_{ChunkID}.wav
+					subtitles[i].RawAudioUrl = fmt.Sprintf("/api/file/tasks/%s/%s/segments/raw/chunk_%d.wav", req.TaskId, dubbing.DubbingDirName, p.ChunkID)
+					subtitles[i].RawAudioDuration = p.ActualDuration
+				}
+			}
+		}
+	}
+
 	// Read config to get original video path, blur regions, and subtitle overlay
 	videoUrl := ""
 	speechUrl := ""
@@ -434,18 +449,49 @@ func (s Service) UpdateTaskSubtitles(req dto.UpdateTaskSubtitlesReq) error {
 
 	// Convert req.Subtitles to dubbing.Cue
 	var cues []dubbing.Cue
+	var targetCues []dubbing.Cue
+	var originCues []dubbing.Cue
+
+	isBilingual := strings.Contains(srtPath, "bilingual_srt.srt")
+
 	for _, sub := range req.Subtitles {
 		cues = append(cues, dubbing.Cue{
 			Index: sub.Index,
 			Start: sub.Start,
 			End:   sub.End,
-			Text:  sub.Text,
+			Text:  strings.TrimSpace(sub.Text),
 		})
+
+		if isBilingual {
+			parts := strings.Split(sub.Text, "\n")
+			originText := strings.TrimSpace(parts[0])
+			targetText := strings.TrimSpace(parts[len(parts)-1])
+
+			targetCues = append(targetCues, dubbing.Cue{
+				Index: sub.Index,
+				Start: sub.Start,
+				End:   sub.End,
+				Text:  targetText,
+			})
+			originCues = append(originCues, dubbing.Cue{
+				Index: sub.Index,
+				Start: sub.Start,
+				End:   sub.End,
+				Text:  originText,
+			})
+		}
 	}
 
 	err := dubbing.WriteSRTFile(srtPath, cues)
 	if err != nil {
 		return fmt.Errorf("Lỗi lưu file phụ đề: %v", err)
+	}
+
+	if isBilingual {
+		targetSrtPath := filepath.Join(baseDir, "target_language_srt.srt")
+		originSrtPath := filepath.Join(baseDir, "origin_language_srt.srt")
+		_ = dubbing.WriteSRTFile(targetSrtPath, targetCues)
+		_ = dubbing.WriteSRTFile(originSrtPath, originCues)
 	}
 
 	// Load config.json and update BlurRegions and SubtitleOverlay

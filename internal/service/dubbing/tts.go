@@ -124,6 +124,16 @@ func GenerateRawChunkSegments(ctx context.Context, tts types.Ttser, plan []PlanI
 			}
 			outChunks[i].ActualDuration = dur
 
+			// Backfill to plan items so frontend can access the duration
+			if len(outChunks[i].Items) > 0 {
+				avg := dur / float64(len(outChunks[i].Items))
+				for _, idx := range outChunks[i].Items {
+					if idx >= 0 && idx < len(outPlan) {
+						outPlan[idx].ActualDuration = avg
+					}
+				}
+			}
+
 			currCompleted := atomic.AddInt32(&completed, 1)
 			if onProgress != nil {
 				onProgress(int(float64(currCompleted) / float64(len(outChunks)) * 95))

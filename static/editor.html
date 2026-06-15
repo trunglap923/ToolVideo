@@ -439,6 +439,7 @@
         <button class="btn" style="background: #eab308; color: #111;" id="editModeBtn">Tuỳ chỉnh Vị trí & Che mờ</button>
         <button class="btn" style="background: var(--border-color); color: white;" id="saveBtn">Lưu Text Phụ đề</button>
         <button class="btn" id="exportBtn">Xuất Video Cuối Cùng</button>
+        <button class="btn" style="background: #ff00ff; color: white;" onclick="if(audioElements[1]) { audioElements[1].currentTime=0; audioElements[1].play(); alert('Đang phát Audio 1!'); } else { alert('Audio 1 chưa được tải!'); }">Test Audio 1</button>
       </div>
     </div>
 
@@ -579,6 +580,11 @@
              <div id="subtitlePreviewText" style="width: 100%; height: 100%; display: flex; align-items: flex-start; justify-content: center; color: white; font-size: 1.2rem; font-weight: 700; white-space: pre-wrap; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -2px -2px 4px rgba(0,0,0,0.8); pointer-events: none;"></div>
              <div class="resize-handle" id="subResizeHandle" style="pointer-events: auto;"></div>
           </div>
+          
+          <!-- AUDIO DEBUG PANEL -->
+          <div id="audioDebugPanel" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); color: #0f0; padding: 10px; z-index: 100; font-family: monospace; font-size: 12px; max-width: 300px; word-wrap: break-word;">
+              Audio Debug: Waiting...
+          </div>
         </div>
       </div>
       <div class="list-area">
@@ -631,27 +637,6 @@
       
       const videoPlayer = document.getElementById('videoPlayer');
       
-      // Audio player for TTS speech preview
-      let speechAudio = document.getElementById('speechAudio');
-      if (!speechAudio) {
-         speechAudio = document.createElement('audio');
-         speechAudio.id = 'speechAudio';
-         speechAudio.style.display = 'none';
-         document.body.appendChild(speechAudio);
-         
-         // Sync audio with video
-         videoPlayer.addEventListener('play', () => { if(speechAudio.src) speechAudio.play(); });
-         videoPlayer.addEventListener('pause', () => { if(speechAudio.src) speechAudio.pause(); });
-         videoPlayer.addEventListener('seeked', () => { 
-            if(speechAudio.src && Math.abs(speechAudio.currentTime - videoPlayer.currentTime) > 0.5) {
-               speechAudio.currentTime = videoPlayer.currentTime;
-            }
-         });
-         videoPlayer.addEventListener('waiting', () => { if(speechAudio.src) speechAudio.pause(); });
-         videoPlayer.addEventListener('playing', () => { if(speechAudio.src) speechAudio.play(); });
-         videoPlayer.addEventListener('ratechange', () => { if(speechAudio.src) speechAudio.playbackRate = videoPlayer.playbackRate; });
-      }
-
       const listContent = document.getElementById('listContent');
       const subTrack = document.getElementById('subTrack');
       const playhead = document.getElementById('playhead');
@@ -678,6 +663,32 @@
       let duration = 0;
       const pixelsPerSecond = 100; // Zoom level
 
+      // Audio Manager for individual TTS segments
+      const audioElements = {};
+      let currentActiveAudioIdx = -1;
+
+      videoPlayer.addEventListener('pause', () => { 
+          if (currentActiveAudioIdx !== -1 && audioElements[currentActiveAudioIdx]) {
+              audioElements[currentActiveAudioIdx].pause();
+          }
+      });
+      videoPlayer.addEventListener('play', () => {
+          if (currentActiveAudioIdx !== -1 && audioElements[currentActiveAudioIdx]) {
+              const audio = audioElements[currentActiveAudioIdx];
+              if (audio.currentTime < audio.duration) {
+                  audio.play().catch(e=>console.log(e));
+              }
+          }
+      });
+      videoPlayer.addEventListener('seeked', () => {
+          if (currentActiveAudioIdx !== -1 && audioElements[currentActiveAudioIdx]) {
+              const sub = subtitles.find(s => s.index === currentActiveAudioIdx);
+              if (sub) {
+                  audioElements[currentActiveAudioIdx].currentTime = (videoPlayer.currentTime - sub.start) * audioElements[currentActiveAudioIdx].playbackRate;
+              }
+          }
+      });
+
       async function init() {
         if (!taskId) {
           alert('Không tìm thấy taskId!');
@@ -697,6 +708,31 @@
                 document.getElementById('runTranslateBtn').disabled = false;
                 document.getElementById('runTtsBtn').disabled = false;
               }
+              
+              // Preload audio elements
+              Object.keys(audioElements).forEach(k => {
+                  audioElements[k].pause();
+                  audioElements[k].src = '';
+                  delete audioElements[k];
+              });
+              currentActiveAudioIdx = -1;
+              let hasAnyAudio = false;
+              subtitles.forEach(sub => {
+                  if (sub.raw_audio_url && sub.raw_audio_duration) {
+                      const a = new Audio(sub.raw_audio_url + "?t=" + new Date().getTime());
+                      a.preload = "auto";
+                      a.preservesPitch = true;
+                      a.mozPreservesPitch = true;
+                      a.webkitPreservesPitch = true;
+                      audioElements[sub.index] = a;
+                      hasAnyAudio = true;
+                  }
+              });
+              if (hasAnyAudio) {
+                  videoPlayer.volume = 0.2; // Mute original slightly
+              } else {
+                  videoPlayer.volume = 1.0;
+              }
             }
             if (json.data.blur_regions) {
               blurRegions = json.data.blur_regions;
@@ -711,16 +747,6 @@
             } else {
               // Fallback
               videoPlayer.src = `/tasks/${taskId}/video.mp4`;
-            }
-
-            if (json.data.speech_url) {
-               speechAudio.src = json.data.speech_url;
-               speechAudio.load();
-               // Mute original video slightly so TTS audio is prominent, or completely
-               videoPlayer.volume = 0.2;
-            } else {
-               speechAudio.removeAttribute('src');
-               videoPlayer.volume = 1.0;
             }
           }
         } catch(e) {
@@ -1018,10 +1044,82 @@
            highlightItem(currentIdx, false);
            subtitleOverlay.innerText = subtitles[currentIdx].text;
            subtitleOverlay.style.display = 'block';
+           
+           // Handle audio playback for current subtitle
+           const sub = subtitles[currentIdx];
+           const audio = audioElements[sub.index];
+           if (audio) {
+               if (currentActiveAudioIdx !== sub.index) {
+                   // Stop previous
+                   if (currentActiveAudioIdx !== -1 && audioElements[currentActiveAudioIdx]) {
+                       audioElements[currentActiveAudioIdx].pause();
+                   }
+                   currentActiveAudioIdx = sub.index;
+                   
+                   try {
+                       // Calculate playback rate based on UI duration
+                       const uiDuration = sub.end - sub.start;
+                       const rate = (sub.raw_audio_duration / uiDuration) * videoPlayer.playbackRate;
+                       const targetRate = Math.max(0.5, Math.min(rate, 4.0)); // Browser limits
+                       if (Math.abs(audio.playbackRate - targetRate) > 0.01) {
+                           audio.playbackRate = targetRate;
+                       }
+                       
+                       // Sync time safely
+                       const timeOffset = time - sub.start;
+                       let targetTime = timeOffset * audio.playbackRate;
+                       
+                       // Prevent clipping the first word if we just entered the subtitle naturally
+                       if (timeOffset < 0.3) {
+                           targetTime = 0;
+                       }
+                       
+                       document.getElementById('audioDebugPanel').innerHTML = `Audio ${sub.index}<br>Rate: ${targetRate.toFixed(2)}<br>TargetTime: ${targetTime.toFixed(2)}<br>ReadyState: ${audio.readyState}`;
+
+                       if (audio.readyState >= 1) { // HAVE_METADATA
+                           audio.currentTime = targetTime;
+                       } else {
+                           audio.addEventListener('loadedmetadata', () => {
+                               if (currentActiveAudioIdx === sub.index) {
+                                   let tt = (videoPlayer.currentTime - sub.start) * audio.playbackRate;
+                                   if (videoPlayer.currentTime - sub.start < 0.3) tt = 0;
+                                   audio.currentTime = tt;
+                               }
+                           }, { once: true });
+                       }
+                       
+                       if (!videoPlayer.paused) {
+                           audio.play().then(() => {
+                               document.getElementById('audioDebugPanel').innerHTML += `<br>Status: PLAYING`;
+                           }).catch(e => {
+                               document.getElementById('audioDebugPanel').innerHTML += `<br>Status: ERROR ${e.message}`;
+                               console.log("Audio play error:", e);
+                           });
+                       }
+                   } catch (err) {
+                       document.getElementById('audioDebugPanel').innerHTML += `<br>Sync Err: ${err.message}`;
+                       console.error("Audio sync error:", err);
+                   }
+               } else {
+                   document.getElementById('audioDebugPanel').innerHTML = `Audio ${sub.index}<br>Rate: ${audio.playbackRate.toFixed(2)}<br>Current: ${audio.currentTime.toFixed(2)}/${audio.duration.toFixed(2)}<br>Paused: ${audio.paused}`;
+                   // Constantly forcing currentTime can cause audio stuttering.
+                   // We only play if it somehow paused but shouldn't have (e.g. stalled), AND hasn't finished.
+                   if (!videoPlayer.paused && audio.paused && audio.readyState >= 3) {
+                       if (audio.duration && audio.currentTime < audio.duration - 0.1) {
+                           audio.play().catch(e => console.log("Audio resume error:", e));
+                       }
+                   }
+               }
+           }
         } else {
            subtitleOverlay.style.display = 'none';
+           if (currentActiveAudioIdx !== -1 && audioElements[currentActiveAudioIdx]) {
+               audioElements[currentActiveAudioIdx].pause();
+               currentActiveAudioIdx = -1;
+           }
         }
       }
+      window.originalUpdatePlayhead = updatePlayhead;
 
       let activeIdx = -1;
       let activeType = 'sub';
@@ -1643,10 +1741,10 @@
       });
 
       // Override updatePlayhead to sync overlays
-      const originalUpdatePlayhead = window.updatePlayhead;
       window.updatePlayhead = function() {
+          if (window.originalUpdatePlayhead) window.originalUpdatePlayhead();
+
           const currentTime = videoPlayer.currentTime;
-          playhead.style.left = `${currentTime * pixelsPerSecond}px`;
           
           let currentSub = subtitles.find(s => currentTime >= s.start && currentTime <= s.end);
           if (currentSub) {

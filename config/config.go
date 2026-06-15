@@ -1,4 +1,4 @@
-﻿package config
+package config
 
 import (
 	"errors"
@@ -156,13 +156,13 @@ var Conf = Config{
 		},
 	},
 	Dubbing: Dubbing{
-		MinSubtitleDuration: 2.5,
-		MaxChunkSize:        5,
-		GapTolerance:        1.5,
+		MinSubtitleDuration: 1.0,
+		MaxChunkSize:        1,
+		GapTolerance:        -1.0,
 		SpeedMin:            0.95,
 		SpeedAccept:         1.15,
 		SpeedMax:            1.30,
-		EnableTextRewrite:   true,
+		EnableTextRewrite:   false,
 		RewriteMaxAttempts:  2,
 		Estimator:           "statistical",
 	},

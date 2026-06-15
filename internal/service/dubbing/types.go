@@ -28,8 +28,8 @@ type Config struct {
 func DefaultConfig() Config {
 	return Config{
 		MinSubtitleDuration: 1.0,
-		MaxChunkSize:        3,
-		GapTolerance:        0.3,
+		MaxChunkSize:        1,
+		GapTolerance:        -1.0,
 		SpeedMin:            0.95,
 		SpeedAccept:         1.15,
 		SpeedMax:            1.30,

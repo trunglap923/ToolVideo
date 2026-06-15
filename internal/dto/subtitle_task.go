@@ -77,8 +77,10 @@ type CancelVideoSubtitleTaskRes struct {
 type SubtitleItem struct {
 	Index int     `json:"index"`
 	Start float64 `json:"start"`
-	End   float64 `json:"end"`
-	Text  string  `json:"text"`
+	End             float64 `json:"end"`
+	Text            string  `json:"text"`
+	RawAudioUrl     string  `json:"raw_audio_url,omitempty"`
+	RawAudioDuration float64 `json:"raw_audio_duration,omitempty"`
 }
 
 type GetTaskSubtitlesResData struct {

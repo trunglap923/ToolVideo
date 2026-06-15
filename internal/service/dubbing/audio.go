@@ -247,12 +247,15 @@ func validateAssemblePlan(plan []PlanItem, segmentsDir string) ([]string, error)
 	filters := make([]string, len(plan))
 	lastEnd := 0.0
 	for i, item := range plan {
-		if item.NewEnd <= item.NewStart {
-			return nil, fmt.Errorf("plan item %d new end must be greater than new start: start %.3f end %.3f", item.Index, item.NewStart, item.NewEnd)
-		}
 		if item.NewStart < lastEnd {
+			shift := lastEnd - item.NewStart
 			plan[i].NewStart = lastEnd
 			item.NewStart = lastEnd
+			plan[i].NewEnd += shift
+			item.NewEnd += shift
+		}
+		if item.NewEnd <= item.NewStart {
+			return nil, fmt.Errorf("plan item %d new end must be greater than new start: start %.3f end %.3f", item.Index, item.NewStart, item.NewEnd)
 		}
 
 		filter, err := buildAtempoFilter(item.SpeedFactor)
@@ -286,8 +289,18 @@ func validateAssembleChunkPlan(plan []PlanItem, chunks []Chunk, segmentsDir stri
 			return nil, fmt.Errorf("chunk %d has no items", chunk.ID)
 		}
 		if chunk.Start < lastEnd {
+			shift := lastEnd - chunk.Start
 			chunks[i].Start = lastEnd
 			chunk.Start = lastEnd
+			chunks[i].End += shift
+			chunk.End += shift
+			// Shift plan items in this chunk
+			for _, idx := range chunk.Items {
+				if idx >= 0 && idx < len(plan) {
+					plan[idx].NewStart += shift
+					plan[idx].NewEnd += shift
+				}
+			}
 		}
 		end := chunkFittedEnd(plan, chunk)
 		if end <= chunk.Start {
