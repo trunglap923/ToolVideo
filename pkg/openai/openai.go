@@ -88,7 +88,7 @@ func (c *Client) Text2Speech(text, voice string, outputFile string) error {
 
 	// 发送HTTP请求
 	client := &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 300 * time.Second,
 	}
 	resp, err := client.Do(req)
 	if err != nil {

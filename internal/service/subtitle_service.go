@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"encoding/json"
 	"fmt"
 	"krillin-ai/config"
 	"krillin-ai/internal/dto"
@@ -10,10 +11,12 @@ import (
 	"krillin-ai/internal/types"
 	"krillin-ai/log"
 	"krillin-ai/pkg/util"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"krillin-ai/internal/service/dubbing"
 
 	"github.com/samber/lo"
 	"go.uber.org/zap"
@@ -240,23 +243,13 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 			}
 		}
 		
-		stepParam.TaskPtr.StatusMsg = "Đang tạo giọng nói nhân tạo (TTS)..."
-		err = s.srtFileToSpeech(ctx, &stepParam)
-		if err != nil {
-			log.GetLogger().Error("StartVideoSubtitleTask srtFileToSpeech err", zap.Any("req", req), zap.Error(err))
-			stepParam.TaskPtr.Status = types.SubtitleTaskStatusFailed
-			stepParam.TaskPtr.FailReason = err.Error()
-			return
-		}
+		// Bỏ qua tạo lồng tiếng và kết xuất âm thanh ở giai đoạn này
+		// stepParam.TaskPtr.StatusMsg = "Đang tạo giọng nói nhân tạo (TTS)..."
+		// err = s.srtFileToSpeech(ctx, &stepParam)
 		
-		stepParam.TaskPtr.StatusMsg = "Đang ghép lồng tiếng và kết xuất video..."
-		err = s.embedSubtitles(ctx, &stepParam)
-		if err != nil {
-			log.GetLogger().Error("StartVideoSubtitleTask embedSubtitles err", zap.Any("req", req), zap.Error(err))
-			stepParam.TaskPtr.Status = types.SubtitleTaskStatusFailed
-			stepParam.TaskPtr.FailReason = err.Error()
-			return
-		}
+		// [Theo yêu cầu của User: Không nhúng phụ đề cứng vào video trước khi chỉnh sửa]
+		// Chỉ lưu SRT và cho phép xem trực tiếp trên trình duyệt
+		stepParam.TaskPtr.StatusMsg = "Đã tạo xong phụ đề. Vui lòng mở Web Studio để chỉnh sửa!"
 		
 		stepParam.TaskPtr.StatusMsg = "Đang hoàn tất quá trình..."
 		err = s.uploadSubtitles(ctx, &stepParam)
@@ -265,6 +258,11 @@ func (s Service) StartSubtitleTask(req dto.StartVideoSubtitleTaskReq) (*dto.Star
 			stepParam.TaskPtr.Status = types.SubtitleTaskStatusFailed
 			stepParam.TaskPtr.FailReason = err.Error()
 			return
+		}
+
+		// Save final StepParam to config.json so we capture AudioFilePath and InputVideoPath
+		if finalBytes, err := json.Marshal(stepParam); err == nil {
+			os.WriteFile(filepath.Join(stepParam.TaskBasePath, "config.json"), finalBytes, 0644)
 		}
 
 		log.GetLogger().Info("video subtitle task end", zap.String("taskId", taskId))
@@ -323,4 +321,189 @@ func (s Service) CancelTask(req dto.CancelVideoSubtitleTaskReq) error {
 		}
 	}
 	return errors.New("Tác vụ không thể huỷ hoặc đã hoàn thành")
+}
+
+func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTaskSubtitlesResData, error) {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	if !ok || task == nil {
+		// Try to see if directory exists before failing
+		baseDir := filepath.Join("tasks", req.TaskId)
+		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+			return nil, errors.New("Không tìm thấy tác vụ (Task not found)")
+		}
+	}
+	
+	baseDir := filepath.Join("tasks", req.TaskId)
+	
+	srtPath := filepath.Join(baseDir, "bilingual_srt.srt")
+	if _, err := os.Stat(srtPath); os.IsNotExist(err) {
+		srtPath = filepath.Join(baseDir, "target_language_srt.srt")
+		if _, err := os.Stat(srtPath); os.IsNotExist(err) {
+			srtPath = filepath.Join(baseDir, "origin_language_srt.srt")
+			if _, err := os.Stat(srtPath); os.IsNotExist(err) {
+				return nil, errors.New("Không tìm thấy file phụ đề")
+			}
+		}
+	}
+
+	cues, err := dubbing.ParseSRTFile(srtPath)
+	if err != nil {
+		return nil, fmt.Errorf("Lỗi đọc file phụ đề: %v", err)
+	}
+
+	subtitles := make([]dto.SubtitleItem, len(cues))
+	for i, c := range cues {
+		subtitles[i] = dto.SubtitleItem{
+			Index: c.Index,
+			Start: c.Start,
+			End:   c.End,
+			Text:  c.Text,
+		}
+	}
+
+	// Read config to get original video path
+	videoUrl := ""
+	configPath := filepath.Join(baseDir, "config.json")
+	if configBytes, err := os.ReadFile(configPath); err == nil {
+		var stepParam types.SubtitleTaskStepParam
+		if json.Unmarshal(configBytes, &stepParam) == nil {
+			videoPath := stepParam.InputVideoPath
+			if videoPath == "" {
+				if strings.HasPrefix(stepParam.Link, "local:") {
+					videoPath = strings.ReplaceAll(stepParam.Link, "local:", "")
+				} else {
+					videoPath = filepath.Join("tasks", req.TaskId, types.SubtitleTaskVideoFileName)
+				}
+			}
+			cleanedPath := strings.TrimPrefix(videoPath, "./")
+			cleanedPath = strings.ReplaceAll(cleanedPath, "\\", "/")
+			
+			// Encode each segment to handle special characters like #, ?, &, spaces
+			segments := strings.Split(cleanedPath, "/")
+			for i, seg := range segments {
+				segments[i] = url.PathEscape(seg)
+			}
+			encodedPath := strings.Join(segments, "/")
+			videoUrl = "/api/file/" + encodedPath
+		}
+	}
+
+	return &dto.GetTaskSubtitlesResData{
+		TaskId:    req.TaskId,
+		Subtitles: subtitles,
+		VideoUrl:  videoUrl,
+	}, nil
+}
+
+func (s Service) UpdateTaskSubtitles(req dto.UpdateTaskSubtitlesReq) error {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	if !ok || task == nil {
+		baseDir := filepath.Join("tasks", req.TaskId)
+		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+			return errors.New("Không tìm thấy tác vụ (Task not found)")
+		}
+	}
+
+	baseDir := filepath.Join("tasks", req.TaskId)
+	srtPath := filepath.Join(baseDir, "bilingual_srt.srt")
+	if _, err := os.Stat(srtPath); os.IsNotExist(err) {
+		srtPath = filepath.Join(baseDir, "target_language_srt.srt")
+		if _, err := os.Stat(srtPath); os.IsNotExist(err) {
+			srtPath = filepath.Join(baseDir, "origin_language_srt.srt")
+		}
+	}
+
+	// Convert req.Subtitles to dubbing.Cue
+	var cues []dubbing.Cue
+	for _, sub := range req.Subtitles {
+		cues = append(cues, dubbing.Cue{
+			Index: sub.Index,
+			Start: sub.Start,
+			End:   sub.End,
+			Text:  sub.Text,
+		})
+	}
+
+	err := dubbing.WriteSRTFile(srtPath, cues)
+	if err != nil {
+		return fmt.Errorf("Lỗi lưu file phụ đề: %v", err)
+	}
+
+	// TODO: Trigger re-render video and TTS based on new subtitles
+	// For now, we just save the SRT file successfully.
+
+	return nil
+}
+
+func (s Service) ExportVideoTask(ctx context.Context, req dto.ExportVideoTaskReq) error {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	var taskPtr *types.SubtitleTask
+	if !ok || task == nil {
+		// Recreate task in memory so polling works
+		taskPtr = &types.SubtitleTask{
+			TaskId: req.TaskId,
+		}
+		storage.SubtitleTasks.Store(req.TaskId, taskPtr)
+	} else {
+		taskPtr = task.(*types.SubtitleTask)
+	}
+
+	configPath := filepath.Join("tasks", req.TaskId, "config.json")
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("Không tìm thấy cấu hình cũ của tác vụ: %v", err)
+	}
+
+	var stepParam types.SubtitleTaskStepParam
+	if err := json.Unmarshal(configBytes, &stepParam); err != nil {
+		return fmt.Errorf("Lỗi đọc cấu hình: %v", err)
+	}
+	
+	// Khôi phục con trỏ taskPtr
+	stepParam.TaskPtr = taskPtr
+
+	// Bắt đầu tiến trình Export
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.GetLogger().Error("ExportVideoTask panic", zap.Any("panic:", r))
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = "Lỗi nghiêm trọng khi xuất video"
+			}
+		}()
+
+		taskPtr.Status = types.SubtitleTaskStatusProcessing
+		taskPtr.ProcessPct = 0
+
+		if req.EnableTts {
+			taskPtr.StatusMsg = "Đang tạo giọng nói nhân tạo (TTS)..."
+			stepParam.EnableTts = true
+			if err := s.srtFileToSpeech(context.Background(), &stepParam); err != nil {
+				log.GetLogger().Error("ExportVideoTask srtFileToSpeech err", zap.Error(err))
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = "Lỗi tạo TTS: " + err.Error()
+				return
+			}
+		} else {
+			stepParam.EnableTts = false
+		}
+
+		taskPtr.StatusMsg = "Đang ghép và kết xuất video cuối cùng..."
+		taskPtr.ProcessPct = 50
+		if err := s.embedSubtitles(context.Background(), &stepParam); err != nil {
+			log.GetLogger().Error("ExportVideoTask embedSubtitles err", zap.Error(err))
+			taskPtr.Status = types.SubtitleTaskStatusFailed
+			taskPtr.FailReason = "Lỗi ghép video: " + err.Error()
+			return
+		}
+
+		taskPtr.StatusMsg = "Hoàn tất xuất video!"
+		taskPtr.ProcessPct = 100
+		taskPtr.Status = types.SubtitleTaskStatusSuccess
+		
+		// Upload again if needed, or just let it finish
+		s.uploadSubtitles(context.Background(), &stepParam)
+	}()
+
+	return nil
 }

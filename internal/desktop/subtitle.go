@@ -12,6 +12,7 @@ import (
 	"krillin-ai/log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -859,6 +860,15 @@ func (sm *SubtitleManager) displayMultiTaskDownloadLinks() {
 		taskTip := widget.NewLabel(fmt.Sprintf("Xem video hoặc bản ghi tại: /tasks/%s/output", taskRes.taskId))
 		taskTip.Alignment = fyne.TextAlignCenter
 		taskContainer.Add(taskTip)
+
+		studioBtn := widget.NewButton("Mở Web Studio", func(taskId string) func() {
+			return func() {
+				u, _ := url.Parse(fmt.Sprintf("http://%s:%d/static/editor.html?taskId=%s", config.Conf.Server.Host, config.Conf.Server.Port, taskId))
+				fyne.CurrentApp().OpenURL(u)
+			}
+		}(taskRes.taskId))
+		studioBtn.Importance = widget.HighImportance
+		taskContainer.Add(studioBtn)
 
 		if &taskRes != &sm.multiTaskResults[len(sm.multiTaskResults)-1] {
 			divider := canvas.NewLine(color.NRGBA{R: 200, G: 200, B: 200, A: 128})

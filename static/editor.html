@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>KrillinAI Studio</title>
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg-color: #0f172a;
+        --panel-bg: #1e293b;
+        --border-color: #334155;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --accent: #3b82f6;
+        --accent-hover: #60a5fa;
+        --timeline-bg: #0f172a;
+        --block-bg: rgba(59, 130, 246, 0.6);
+        --block-border: #3b82f6;
+        --handle-color: #cbd5e1;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: "Inter", Arial, sans-serif;
+        background: var(--bg-color);
+        color: var(--text-primary);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .header {
+        height: 60px;
+        background: var(--panel-bg);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+      }
+
+      .header-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+
+      .btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn:hover { background: var(--accent-hover); }
+
+      .main-workspace {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+
+      /* Player Area */
+      .player-area {
+        flex: 2;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #000;
+      }
+      
+      .player-container {
+        width: 100%;
+        max-width: 800px;
+        aspect-ratio: 16/9;
+        background: #111;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative; /* For subtitle overlay positioning */
+      }
+
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      
+      .video-subtitle-overlay {
+        position: absolute;
+        bottom: 5%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        text-align: center;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: 700;
+        white-space: pre-wrap;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -2px -2px 4px rgba(0,0,0,0.8);
+        pointer-events: none; /* Let clicks pass through to video */
+        display: none; /* Hidden by default */
+        z-index: 20;
+      }
+
+      /* Subtitle List Area */
+      .list-area {
+        flex: 1;
+        background: var(--panel-bg);
+        border-left: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .list-header {
+        padding: 16px;
+        font-weight: 600;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .list-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 10px;
+      }
+
+      .sub-item {
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: border-color 0.2s;
+      }
+      .sub-item.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent);
+      }
+
+      .sub-item-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+
+      .sub-item textarea {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.95rem;
+        resize: none;
+        outline: none;
+        line-height: 1.4;
+      }
+
+      /* Timeline Area */
+      .timeline-area {
+        height: 200px;
+        background: var(--panel-bg);
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .timeline-header {
+        height: 30px;
+        background: var(--bg-color);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        position: relative;
+      }
+
+      .timeline-tracks {
+        flex: 1;
+        position: relative;
+        overflow-x: auto;
+        overflow-y: hidden;
+        background: var(--timeline-bg);
+        padding-top: 20px;
+      }
+
+      .timeline-ruler {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 20px;
+        pointer-events: none;
+        background: rgba(255,255,255,0.05);
+      }
+
+      .playhead {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #ef4444;
+        z-index: 10;
+        pointer-events: none;
+      }
+      .playhead::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -4px;
+        width: 10px;
+        height: 10px;
+        background: #ef4444;
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+      }
+
+      .sub-track {
+        height: 60px;
+        position: relative;
+        width: 100%;
+      }
+
+      .sub-block {
+        position: absolute;
+        height: 40px;
+        top: 10px;
+        background: var(--block-bg);
+        border: 1px solid var(--block-border);
+        border-radius: 4px;
+        color: white;
+        font-size: 0.75rem;
+        padding: 4px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        user-select: none;
+      }
+      
+      .sub-block.active {
+        background: var(--accent);
+        z-index: 5;
+      }
+
+      .handle {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 8px;
+        cursor: col-resize;
+        background: rgba(255,255,255,0.2);
+      }
+      .handle:hover {
+        background: rgba(255,255,255,0.5);
+      }
+      .handle-left { left: 0; }
+      .handle-right { right: 0; }
+      
+      /* Scrollbar */
+      ::-webkit-scrollbar { height: 8px; width: 8px; }
+      ::-webkit-scrollbar-track { background: var(--bg-color); }
+      ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-title">KrillinAI Studio</div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <label style="font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+          <input type="checkbox" id="ttsCheckbox" checked />
+          Lồng tiếng AI
+        </label>
+        <button class="btn" style="background: var(--border-color); color: white;" id="saveBtn">Lưu Text Phụ đề</button>
+        <button class="btn" id="exportBtn">Xuất Video Cuối Cùng</button>
+      </div>
+    </div>
+
+    <div class="main-workspace">
+      <div class="player-area">
+        <div class="player-container">
+          <video id="videoPlayer" controls>
+            <!-- Video source dynamically injected -->
+          </video>
+          <div class="video-subtitle-overlay" id="subtitleOverlay"></div>
+        </div>
+      </div>
+      <div class="list-area">
+        <div class="list-header">
+          <span>Phụ đề</span>
+          <span style="font-size:0.8rem;color:var(--text-secondary)" id="subCount">0 mục</span>
+        </div>
+        <div class="list-content" id="listContent">
+          <!-- Subtitle items dynamically injected -->
+        </div>
+      </div>
+    </div>
+
+    <div class="timeline-area">
+      <div class="timeline-tracks" id="timelineTracks">
+        <div class="timeline-ruler"></div>
+        <div class="playhead" id="playhead" style="left: 0px"></div>
+        <div class="sub-track" id="subTrack">
+          <!-- Blocks dynamically injected -->
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const taskId = urlParams.get('taskId');
+      
+      const videoPlayer = document.getElementById('videoPlayer');
+      const listContent = document.getElementById('listContent');
+      const subTrack = document.getElementById('subTrack');
+      const playhead = document.getElementById('playhead');
+      const saveBtn = document.getElementById('saveBtn');
+      const exportBtn = document.getElementById('exportBtn');
+      const ttsCheckbox = document.getElementById('ttsCheckbox');
+      const timelineTracks = document.getElementById('timelineTracks');
+      const subCount = document.getElementById('subCount');
+      const subtitleOverlay = document.getElementById('subtitleOverlay');
+
+      let subtitles = [];
+      let duration = 0;
+      const pixelsPerSecond = 100; // Zoom level
+
+      async function init() {
+        if (!taskId) {
+          alert('Không tìm thấy taskId!');
+          return;
+        }
+
+        // 1. Fetch Subtitles and Video URL
+        try {
+          const res = await fetch(`/api/task/subtitles?taskId=${taskId}`);
+          const json = await res.json();
+          if (json.error === 0 && json.data) {
+            if (json.data.subtitles) {
+              subtitles = json.data.subtitles;
+              subCount.innerText = `${subtitles.length} mục`;
+            }
+            if (json.data.video_url) {
+              videoPlayer.src = json.data.video_url;
+            } else {
+              // Fallback
+              videoPlayer.src = `/tasks/${taskId}/video.mp4`;
+            }
+          }
+        } catch(e) {
+          console.error("Fetch subtitles error", e);
+        }
+
+        // Wait for video metadata to know the duration
+        videoPlayer.addEventListener('loadedmetadata', () => {
+          duration = videoPlayer.duration;
+          renderTimeline();
+          renderList();
+        });
+
+        // If metadata fails or video not found, just use last subtitle end time
+        videoPlayer.addEventListener('error', () => {
+           duration = subtitles.length > 0 ? subtitles[subtitles.length - 1].end + 5 : 60;
+           renderTimeline();
+           renderList();
+        });
+
+        videoPlayer.addEventListener('timeupdate', updatePlayhead);
+        
+        saveBtn.addEventListener('click', saveSubtitles);
+        exportBtn.addEventListener('click', exportVideo);
+      }
+
+      function formatTime(sec) {
+        const d = new Date(sec * 1000);
+        const pad = (n) => n.toString().padStart(2, '0');
+        const ms = Math.floor(d.getUTCMilliseconds() / 10);
+        return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}.${pad(ms)}`;
+      }
+
+      function renderList() {
+        listContent.innerHTML = '';
+        subtitles.forEach((sub, i) => {
+          const div = document.createElement('div');
+          div.className = 'sub-item';
+          div.id = `list-item-${i}`;
+          
+          div.innerHTML = `
+            <div class="sub-item-header">
+              <span>#${sub.index}</span>
+              <span id="time-txt-${i}">${formatTime(sub.start)} --> ${formatTime(sub.end)}</span>
+            </div>
+            <textarea rows="2" data-idx="${i}">${sub.text}</textarea>
+          `;
+          
+          const textarea = div.querySelector('textarea');
+          textarea.addEventListener('input', (e) => {
+            subtitles[i].text = e.target.value;
+            const block = document.getElementById(`block-${i}`);
+            if (block) block.childNodes[2].nodeValue = e.target.value;
+          });
+          
+          div.addEventListener('click', () => {
+            videoPlayer.currentTime = sub.start;
+            highlightItem(i);
+          });
+
+          listContent.appendChild(div);
+        });
+      }
+
+      function renderTimeline() {
+        subTrack.innerHTML = '';
+        subTrack.style.width = `${duration * pixelsPerSecond}px`;
+        
+        subtitles.forEach((sub, i) => {
+          const block = document.createElement('div');
+          block.className = 'sub-block';
+          block.id = `block-${i}`;
+          
+          const leftPx = sub.start * pixelsPerSecond;
+          const widthPx = (sub.end - sub.start) * pixelsPerSecond;
+          
+          block.style.left = `${leftPx}px`;
+          block.style.width = `${widthPx}px`;
+          
+          const leftHandle = document.createElement('div');
+          leftHandle.className = 'handle handle-left';
+          
+          const rightHandle = document.createElement('div');
+          rightHandle.className = 'handle handle-right';
+          
+          block.appendChild(leftHandle);
+          block.appendChild(rightHandle);
+          block.append(sub.text);
+          
+          block.addEventListener('click', (e) => {
+             videoPlayer.currentTime = sub.start;
+             highlightItem(i);
+          });
+
+          makeDraggable(block, leftHandle, rightHandle, i);
+          
+          subTrack.appendChild(block);
+        });
+      }
+
+      function updatePlayhead() {
+        const time = videoPlayer.currentTime;
+        playhead.style.left = `${time * pixelsPerSecond}px`;
+        
+        // Auto scroll timeline
+        const viewWidth = timelineTracks.clientWidth;
+        const scrollLeft = timelineTracks.scrollLeft;
+        const playheadX = time * pixelsPerSecond;
+        
+        if (playheadX > scrollLeft + viewWidth * 0.8) {
+           timelineTracks.scrollLeft = playheadX - viewWidth * 0.2;
+        } else if (playheadX < scrollLeft) {
+           timelineTracks.scrollLeft = Math.max(0, playheadX - viewWidth * 0.2);
+        }
+
+        // Highlight current sub and update overlay
+        const currentIdx = subtitles.findIndex(s => time >= s.start && time <= s.end);
+        if (currentIdx !== -1) {
+           highlightItem(currentIdx, false);
+           subtitleOverlay.innerText = subtitles[currentIdx].text;
+           subtitleOverlay.style.display = 'block';
+        } else {
+           subtitleOverlay.style.display = 'none';
+        }
+      }
+
+      let activeIdx = -1;
+      function highlightItem(idx, scrollList = true) {
+        if (activeIdx === idx) return;
+        if (activeIdx !== -1) {
+          const oldList = document.getElementById(`list-item-${activeIdx}`);
+          const oldBlock = document.getElementById(`block-${activeIdx}`);
+          if (oldList) oldList.classList.remove('active');
+          if (oldBlock) oldBlock.classList.remove('active');
+        }
+        activeIdx = idx;
+        const newList = document.getElementById(`list-item-${idx}`);
+        const newBlock = document.getElementById(`block-${idx}`);
+        if (newList) {
+           newList.classList.add('active');
+           if (scrollList) newList.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        if (newBlock) newBlock.classList.add('active');
+      }
+
+      function makeDraggable(block, leftHandle, rightHandle, idx) {
+        let isDragging = false;
+        let isResizingLeft = false;
+        let isResizingRight = false;
+        let startX = 0;
+        let initialStart = 0;
+        let initialEnd = 0;
+
+        leftHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          isResizingLeft = true;
+          startX = e.clientX;
+          initialStart = subtitles[idx].start;
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        rightHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          isResizingRight = true;
+          startX = e.clientX;
+          initialEnd = subtitles[idx].end;
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        block.addEventListener('mousedown', (e) => {
+          if (e.target === leftHandle || e.target === rightHandle) return;
+          isDragging = true;
+          startX = e.clientX;
+          initialStart = subtitles[idx].start;
+          initialEnd = subtitles[idx].end;
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        function onMouseMove(e) {
+          const deltaX = e.clientX - startX;
+          const deltaSec = deltaX / pixelsPerSecond;
+          
+          if (isResizingLeft) {
+            let newStart = initialStart + deltaSec;
+            if (newStart < 0) newStart = 0;
+            if (newStart >= subtitles[idx].end - 0.5) newStart = subtitles[idx].end - 0.5; // min 0.5s
+            
+            // Limit by previous subtitle end
+            if (idx > 0 && newStart < subtitles[idx-1].end) {
+               newStart = subtitles[idx-1].end;
+            }
+
+            subtitles[idx].start = newStart;
+            block.style.left = `${newStart * pixelsPerSecond}px`;
+            block.style.width = `${(subtitles[idx].end - newStart) * pixelsPerSecond}px`;
+            updateListTime(idx);
+
+          } else if (isResizingRight) {
+            let newEnd = initialEnd + deltaSec;
+            if (newEnd > duration) newEnd = duration;
+            if (newEnd <= subtitles[idx].start + 0.5) newEnd = subtitles[idx].start + 0.5;
+
+            // Limit by next subtitle start
+            if (idx < subtitles.length - 1 && newEnd > subtitles[idx+1].start) {
+               newEnd = subtitles[idx+1].start;
+            }
+
+            subtitles[idx].end = newEnd;
+            block.style.width = `${(newEnd - subtitles[idx].start) * pixelsPerSecond}px`;
+            updateListTime(idx);
+
+          } else if (isDragging) {
+            const width = initialEnd - initialStart;
+            let newStart = initialStart + deltaSec;
+            
+            if (newStart < 0) newStart = 0;
+            if (idx > 0 && newStart < subtitles[idx-1].end) newStart = subtitles[idx-1].end;
+            
+            let newEnd = newStart + width;
+            if (idx < subtitles.length - 1 && newEnd > subtitles[idx+1].start) {
+               newEnd = subtitles[idx+1].start;
+               newStart = newEnd - width;
+            }
+            if (newEnd > duration) {
+               newEnd = duration;
+               newStart = newEnd - width;
+            }
+
+            subtitles[idx].start = newStart;
+            subtitles[idx].end = newEnd;
+            
+            block.style.left = `${newStart * pixelsPerSecond}px`;
+            block.style.width = `${(newEnd - newStart) * pixelsPerSecond}px`;
+            updateListTime(idx);
+          }
+        }
+
+        function onMouseUp() {
+          isDragging = false;
+          isResizingLeft = false;
+          isResizingRight = false;
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        }
+      }
+
+      function updateListTime(idx) {
+         const timeTxt = document.getElementById(`time-txt-${idx}`);
+         if (timeTxt) {
+            timeTxt.innerText = `${formatTime(subtitles[idx].start)} --> ${formatTime(subtitles[idx].end)}`;
+         }
+      }
+
+      async function saveSubtitles() {
+        saveBtn.innerText = "Đang lưu...";
+        saveBtn.disabled = true;
+        try {
+          const res = await fetch('/api/task/update_subtitles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              task_id: taskId,
+              subtitles: subtitles
+            })
+          });
+          const json = await res.json();
+          if (json.error === 0) {
+            alert('Đã lưu phụ đề thành công!');
+          } else {
+            alert('Lưu thất bại: ' + json.msg);
+          }
+        } catch(e) {
+          alert('Lỗi kết nối!');
+        } finally {
+          saveBtn.innerText = "Lưu Text Phụ đề";
+          saveBtn.disabled = false;
+        }
+      }
+
+      async function exportVideo() {
+        // Save subtitles first
+        await saveSubtitles();
+
+        exportBtn.innerText = "Đang kết xuất...";
+        exportBtn.disabled = true;
+        try {
+          const res = await fetch('/api/task/export_video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              task_id: taskId,
+              enable_tts: ttsCheckbox.checked
+            })
+          });
+          const json = await res.json();
+          if (json.error === 0) {
+            alert('Tiến trình xuất video đã bắt đầu! Bạn có thể xem kết quả trong thư mục output của task hoặc quay về trang chủ để xem tiến độ.');
+            // Polling can be added here
+          } else {
+            alert('Lỗi xuất video: ' + json.msg);
+          }
+        } catch(e) {
+          alert('Lỗi kết nối!');
+        } finally {
+          exportBtn.innerText = "Xuất Video Cuối Cùng";
+          exportBtn.disabled = false;
+        }
+      }
+
+      // Track click to jump
+      timelineTracks.addEventListener('mousedown', (e) => {
+         if (e.target === subTrack || e.target === timelineTracks) {
+            const rect = subTrack.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            videoPlayer.currentTime = clickX / pixelsPerSecond;
+         }
+      });
+
+      init();
+    </script>
+  </body>
+</html>

@@ -71,3 +71,31 @@ type CancelVideoSubtitleTaskRes struct {
 	Error int32  `json:"error"`
 	Msg   string `json:"msg"`
 }
+
+type SubtitleItem struct {
+	Index int     `json:"index"`
+	Start float64 `json:"start"`
+	End   float64 `json:"end"`
+	Text  string  `json:"text"`
+}
+
+type GetTaskSubtitlesResData struct {
+	TaskId    string         `json:"task_id"`
+	Subtitles []SubtitleItem `json:"subtitles"`
+	VideoUrl  string         `json:"video_url"`
+}
+
+type UpdateTaskSubtitlesReq struct {
+	TaskId    string         `json:"task_id"`
+	Subtitles []SubtitleItem `json:"subtitles"`
+}
+
+type ExportVideoTaskReq struct {
+	TaskId    string `json:"task_id"`
+	EnableTts bool   `json:"enable_tts"`
+}
+
+type ExportVideoTaskRes struct {
+	Error int32  `json:"error"`
+	Msg   string `json:"msg"`
+}

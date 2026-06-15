@@ -21,10 +21,14 @@ func SetupRouter(r *gin.Engine) {
 		api.HEAD("/file/*filepath", hdl.DownloadFile)
 		api.GET("/config", hdl.GetConfig)
 		api.POST("/config", hdl.UpdateConfig)
+		api.GET("/task/subtitles", hdl.GetTaskSubtitles)
+		api.POST("/task/update_subtitles", hdl.UpdateTaskSubtitles)
+		api.POST("/task/export_video", hdl.ExportVideoTask)
 	}
 
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/static")
 	})
 	r.StaticFS("/static", http.FS(static.EmbeddedFiles))
+	r.Static("/tasks", "./tasks")
 }

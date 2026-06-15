@@ -65,7 +65,7 @@ func ParseSRTFile(path string) ([]Cue, error) {
 			Index: index,
 			Start: start,
 			End:   end,
-			Text:  strings.Join(lines[2:], " "),
+			Text:  strings.Join(lines[2:], "\n"),
 		})
 	}
 

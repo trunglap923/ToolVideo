@@ -13,6 +13,34 @@ import (
 	"go.uber.org/zap"
 )
 
+func (h Handler) ExportVideoTask(ctx *gin.Context) {
+	var req dto.ExportVideoTaskReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		log.GetLogger().Error("ExportVideoTask ShouldBindJSON err", zap.Error(err))
+		response.R(ctx, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	err := h.Service.ExportVideoTask(ctx, req)
+	if err != nil {
+		response.R(ctx, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(ctx, response.Response{
+		Error: 0,
+		Msg:   "Thành công",
+		Data:  nil,
+	})
+}
+
 func (h Handler) StartSubtitleTask(c *gin.Context) {
 	var req dto.StartVideoSubtitleTaskReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -122,6 +150,61 @@ func (h Handler) CancelSubtitleTask(c *gin.Context) {
 	})
 }
 
+func (h Handler) GetTaskSubtitles(c *gin.Context) {
+	var req dto.GetVideoSubtitleTaskReq
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	data, err := h.Service.GetTaskSubtitles(req)
+	if err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(c, response.Response{
+		Error: 0,
+		Msg:   "Thành công",
+		Data:  data,
+	})
+}
+
+func (h Handler) UpdateTaskSubtitles(c *gin.Context) {
+	var req dto.UpdateTaskSubtitlesReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.GetLogger().Error("UpdateTaskSubtitles ShouldBindJSON err", zap.Error(err))
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	err := h.Service.UpdateTaskSubtitles(req)
+	if err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(c, response.Response{
+		Error: 0,
+		Msg:   "Cập nhật thành công",
+		Data:  nil,
+	})
+}
+
 func (h Handler) UploadFile(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
@@ -185,5 +268,5 @@ func (h Handler) DownloadFile(c *gin.Context) {
 		})
 		return
 	}
-	c.FileAttachment(localFilePath, filepath.Base(localFilePath))
+	c.File(localFilePath)
 }

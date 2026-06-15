@@ -2379,6 +2379,18 @@
           }
         }
 
+        // Add Web Studio button
+        if (taskId) {
+          const studioLink = document.createElement("a");
+          studioLink.href = `/static/editor.html?taskId=${taskId}`;
+          studioLink.target = "_blank";
+          studioLink.textContent = "Mở Web Studio";
+          studioLink.style.background = "#3b82f6";
+          studioLink.style.color = "white";
+          studioLink.style.fontWeight = "bold";
+          downloadLinks.appendChild(studioLink);
+        }
+
         downloadLinks.classList.remove("hidden");
       }
 
