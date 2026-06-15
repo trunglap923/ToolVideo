@@ -433,14 +433,127 @@
     <div class="header">
       <div class="header-title">KrillinAI Studio</div>
       <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn" style="background: #10b981;" id="runWhisperBtn">1. 🎙️ Trích xuất Phụ đề</button>
+        <button class="btn" style="background: #3b82f6;" id="runTranslateBtn" disabled>2. 🌐 Dịch Phụ đề</button>
+        <button class="btn" style="background: #8b5cf6;" id="runTtsBtn" disabled>3. 🗣️ Lồng tiếng AI</button>
         <button class="btn" style="background: #eab308; color: #111;" id="editModeBtn">Tuỳ chỉnh Vị trí & Che mờ</button>
-        <label style="font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-          <input type="checkbox" id="ttsCheckbox" checked />
-          Lồng tiếng AI
-        </label>
         <button class="btn" style="background: var(--border-color); color: white;" id="saveBtn">Lưu Text Phụ đề</button>
         <button class="btn" id="exportBtn">Xuất Video Cuối Cùng</button>
       </div>
+    </div>
+
+    <!-- Extract Modal -->
+    <div id="whisperModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+      <div style="background:var(--panel-bg); border-radius:12px; width:500px; padding:24px; border:1px solid var(--border-color); max-height:90vh; overflow-y:auto;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:12px;">Trích xuất Phụ đề (Extract)</h3>
+        
+        <div style="margin-bottom: 24px;">
+          <label style="display:block; margin-bottom:6px; color:var(--text-secondary); font-size:0.9rem;">Ngôn ngữ Video Gốc (Original Language):</label>
+          <select id="modalOriginLang" style="width:100%; padding:8px; border-radius:6px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary);">
+            <option value="auto" selected>Tự động phát hiện (Auto)</option>
+            <option value="vi">Tiếng Việt</option>
+            <option value="zh_cn">简体中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="tr">Türkçe</option>
+            <option value="de">Deutsch</option>
+            <option value="ko">한국어</option>
+            <option value="ru">Русский язык</option>
+            <option value="ms">Bahasa Melayu</option>
+          </select>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px;">
+          <button id="whisperModalCloseBtn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); padding:8px 16px; border-radius:6px; cursor:pointer;">Huỷ</button>
+          <button id="whisperModalStartBtn" style="background:var(--accent); border:none; color:white; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Bắt đầu Trích xuất</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Translate Modal -->
+    <div id="translateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+      <div style="background:var(--panel-bg); border-radius:12px; width:500px; padding:24px; border:1px solid var(--border-color); max-height:90vh; overflow-y:auto;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:12px;">Dịch Phụ đề (Translate)</h3>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display:block; margin-bottom:6px; color:var(--text-secondary); font-size:0.9rem;">Dịch sang (Translate To):</label>
+          <select id="modalTargetLang" style="width:100%; padding:8px; border-radius:6px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary);">
+            <option value="vi" selected>Tiếng Việt</option>
+            <option value="zh_cn">简体中文</option>
+            <option value="zh_tw">繁體中文</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+            <option value="id">bahasa Indonesia</option>
+            <option value="ms">Bahasa Melayu</option>
+            <option value="th">ภาษาไทย</option>
+            <option value="fil">Wikang Filipino</option>
+            <option value="ko">한국어</option>
+            <option value="ar">اَلْعَرَبِيَّةُ</option>
+            <option value="fr">Français</option>
+            <option value="de">Deutsch</option>
+            <option value="it">Italiano</option>
+            <option value="ru">Русский язык</option>
+            <option value="pt">Português</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px; display:flex; flex-direction:column; gap:8px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="modalBilingual" checked />
+            <span>Giữ phụ đề Song ngữ (Bilingual Subtitles)</span>
+          </label>
+          <select id="modalBilingualPos" style="width:100%; padding:8px; border-radius:6px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary); margin-left: 24px; width: calc(100% - 24px);">
+            <option value="top">Dịch ở trên (Translation Above)</option>
+            <option value="bottom">Dịch ở dưới (Translation Below)</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+            <input type="checkbox" id="modalModalFilter" checked />
+            <span>Bật bộ lọc từ đệm (Tone Word Filtering)</span>
+          </label>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px;">
+          <button id="translateModalCloseBtn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); padding:8px 16px; border-radius:6px; cursor:pointer;">Huỷ</button>
+          <button id="translateModalStartBtn" style="background:var(--accent); border:none; color:white; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Bắt đầu Dịch</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TTS Modal -->
+    <div id="ttsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:9999; justify-content:center; align-items:center;">
+      <div style="background:var(--panel-bg); border-radius:12px; width:500px; padding:24px; border:1px solid var(--border-color); max-height:90vh; overflow-y:auto;">
+        <h3 style="margin-top:0; border-bottom:1px solid var(--border-color); padding-bottom:12px;">配音设置 Dubbing Settings</h3>
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display:block; margin-bottom:6px; color:var(--text-secondary); font-size:0.9rem;">输入声音代码 Enter Voice Code (Bỏ trống nếu không đổi)</label>
+          <input type="text" id="modalTtsVoiceCode" placeholder="Ví dụ: vi-VN-HoaiMyNeural" style="width:100%; padding:8px; border-radius:6px; background:var(--bg-color); border:1px solid var(--border-color); color:var(--text-primary);" />
+        </div>
+
+        <div style="margin-bottom: 24px;">
+          <label style="display:block; margin-bottom:6px; color:var(--text-secondary); font-size:0.9rem;">选择音色克隆样本 Select Voice Clone Sample: <span style="font-size:0.8rem;">（Aliyun TTS Supported）</span></label>
+          <input type="file" id="modalVoiceCloneFile" accept="audio/*" style="width:100%; color:var(--text-secondary);" />
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:12px;">
+          <button id="ttsModalCloseBtn" style="background:transparent; border:1px solid var(--border-color); color:var(--text-primary); padding:8px 16px; border-radius:6px; cursor:pointer;">Huỷ</button>
+          <button id="ttsModalStartBtn" style="background:var(--accent); border:none; color:white; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">Bắt đầu Lồng tiếng</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Progress Modal -->
+    <div id="progressModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:10000; justify-content:center; align-items:center;">
+       <div style="background:var(--panel-bg); border-radius:12px; width:400px; padding:24px; text-align:center; border:1px solid var(--border-color);">
+          <h3 id="progressTitle" style="margin-top:0;">Đang xử lý...</h3>
+          <div style="width:100%; background:var(--bg-color); border-radius:8px; height:20px; overflow:hidden; margin:20px 0;">
+             <div id="progressBar" style="width:0%; height:100%; background:var(--accent); transition:width 0.3s;"></div>
+          </div>
+          <div id="progressMsg" style="color:var(--text-secondary); font-size:0.9rem;">Khởi tạo...</div>
+       </div>
     </div>
 
     <div class="main-workspace">
@@ -522,7 +635,7 @@
       const playhead = document.getElementById('playhead');
       const saveBtn = document.getElementById('saveBtn');
       const exportBtn = document.getElementById('exportBtn');
-      const ttsCheckbox = document.getElementById('ttsCheckbox');
+      // ttsCheckbox removed
       const timelineTracks = document.getElementById('timelineTracks');
       const topScrollContainer = document.getElementById('topScrollContainer');
       const topScrollContent = document.getElementById('topScrollContent');
@@ -557,6 +670,11 @@
             if (json.data.subtitles) {
               subtitles = json.data.subtitles;
               subCount.innerText = `${subtitles.length} mục`;
+              
+              if (subtitles.length > 0) {
+                document.getElementById('runTranslateBtn').disabled = false;
+                document.getElementById('runTtsBtn').disabled = false;
+              }
             }
             if (json.data.blur_regions) {
               blurRegions = json.data.blur_regions;
@@ -1499,7 +1617,7 @@
           playhead.style.left = `${currentTime * pixelsPerSecond}px`;
           
           let currentSub = subtitles.find(s => currentTime >= s.start && currentTime <= s.end);
-          if (currentSub && ttsCheckbox.checked) {
+          if (currentSub) {
             subtitleOverlay.style.display = 'block';
             subtitleOverlay.innerText = currentSub.text;
             
@@ -1595,6 +1713,228 @@
           if (!videoPlayer.paused) customControls.style.opacity = '0';
       });
       videoPlayer.addEventListener('pause', showControls);
+
+      // --- AI Task Modals & Progress ---
+      const runWhisperBtn = document.getElementById('runWhisperBtn');
+      const runTranslateBtn = document.getElementById('runTranslateBtn');
+      const runTtsBtn = document.getElementById('runTtsBtn');
+      
+      const whisperModal = document.getElementById('whisperModal');
+      const whisperModalCloseBtn = document.getElementById('whisperModalCloseBtn');
+      const whisperModalStartBtn = document.getElementById('whisperModalStartBtn');
+      
+      const translateModal = document.getElementById('translateModal');
+      const translateModalCloseBtn = document.getElementById('translateModalCloseBtn');
+      const translateModalStartBtn = document.getElementById('translateModalStartBtn');
+      
+      const modalOriginLang = document.getElementById('modalOriginLang');
+      const modalTargetLang = document.getElementById('modalTargetLang');
+      const modalBilingual = document.getElementById('modalBilingual');
+      const modalBilingualPos = document.getElementById('modalBilingualPos');
+      const modalModalFilter = document.getElementById('modalModalFilter');
+      
+      const ttsModal = document.getElementById('ttsModal');
+      const ttsModalCloseBtn = document.getElementById('ttsModalCloseBtn');
+      const ttsModalStartBtn = document.getElementById('ttsModalStartBtn');
+      const modalTtsVoiceCode = document.getElementById('modalTtsVoiceCode');
+      const modalVoiceCloneFile = document.getElementById('modalVoiceCloneFile');
+      
+      const progressModal = document.getElementById('progressModal');
+      const progressTitle = document.getElementById('progressTitle');
+      const progressBar = document.getElementById('progressBar');
+      const progressMsg = document.getElementById('progressMsg');
+
+      let currentPollingInterval = null;
+
+      runWhisperBtn.addEventListener('click', () => {
+         if (!taskId) return;
+         if (!confirm('Bạn có chắc chắn muốn chạy trích xuất phụ đề (Whisper)? Dữ liệu phụ đề hiện tại sẽ bị ghi đè!')) return;
+         whisperModal.style.display = 'flex';
+      });
+
+      whisperModalCloseBtn.addEventListener('click', () => {
+         whisperModal.style.display = 'none';
+      });
+
+      whisperModalStartBtn.addEventListener('click', async () => {
+         const payload = {
+            task_id: taskId,
+            origin_lang: modalOriginLang.value
+         };
+
+         whisperModal.style.display = 'none';
+         showProgressModal("Đang trích xuất phụ đề (Whisper)...");
+
+         try {
+            const res = await fetch('/api/task/run_whisper', {
+               method: 'POST',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.error !== 0) {
+               alert('Lỗi: ' + json.msg);
+               hideProgressModal();
+               return;
+            }
+            startPollingProgress("Trích xuất phụ đề hoàn tất!");
+         } catch(e) {
+            alert('Lỗi khởi tạo Trích xuất phụ đề!');
+            hideProgressModal();
+         }
+      });
+
+      runTranslateBtn.addEventListener('click', () => {
+         if (!taskId) return;
+         translateModal.style.display = 'flex';
+      });
+
+      translateModalCloseBtn.addEventListener('click', () => {
+         translateModal.style.display = 'none';
+      });
+
+      translateModalStartBtn.addEventListener('click', async () => {
+         await saveSubtitles();
+
+         const payload = {
+            task_id: taskId,
+            target_lang: modalTargetLang.value,
+            bilingual: modalBilingual.checked ? 1 : 2,
+            translation_subtitle_pos: modalBilingualPos.value === 'top' ? 1 : 2,
+            modal_filter: modalModalFilter.checked ? 1 : 2
+         };
+
+         translateModal.style.display = 'none';
+         showProgressModal("Đang dịch phụ đề...");
+
+         try {
+            const res = await fetch('/api/task/run_translate', {
+               method: 'POST',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.error !== 0) {
+               alert('Lỗi: ' + json.msg);
+               hideProgressModal();
+               return;
+            }
+            startPollingProgress("Dịch phụ đề hoàn tất!");
+         } catch(e) {
+            alert('Lỗi khởi tạo Dịch phụ đề!');
+            hideProgressModal();
+         }
+      });
+
+      runTtsBtn.addEventListener('click', () => {
+         if (!taskId) return;
+         ttsModal.style.display = 'flex';
+      });
+
+      ttsModalCloseBtn.addEventListener('click', () => {
+         ttsModal.style.display = 'none';
+      });
+
+      ttsModalStartBtn.addEventListener('click', async () => {
+         await saveSubtitles();
+         
+         const payload = {
+            task_id: taskId,
+            tts_voice_code: modalTtsVoiceCode.value
+         };
+
+         // Handle Voice Clone Upload if any
+         const fileInput = document.getElementById('modalVoiceCloneFile');
+         if (fileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+               const uploadRes = await fetch('/api/file', {
+                  method: 'POST',
+                  body: formData
+               });
+               const uploadJson = await uploadRes.json();
+               if (uploadJson.error === 0 && uploadJson.data.file_path.length > 0) {
+                  payload.tts_voice_clone_src_file_url = uploadJson.data.file_path[0];
+               } else {
+                  alert("Lỗi tải file Voice Clone lên.");
+                  return;
+               }
+            } catch(e) {
+               alert("Lỗi upload file: " + e);
+               return;
+            }
+         }
+
+         ttsModal.style.display = 'none';
+         showProgressModal("Đang tạo Lồng tiếng AI (TTS)...");
+
+         try {
+            const res = await fetch('/api/task/run_tts_only', {
+               method: 'POST',
+               headers: {'Content-Type': 'application/json'},
+               body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            if (json.error !== 0) {
+               alert('Lỗi: ' + json.msg);
+               hideProgressModal();
+               return;
+            }
+            startPollingProgress("Lồng tiếng hoàn tất!");
+         } catch(e) {
+            alert('Lỗi khởi tạo TTS!');
+            hideProgressModal();
+         }
+      });
+
+      function showProgressModal(title) {
+         progressModal.style.display = 'flex';
+         progressTitle.innerText = title;
+         progressBar.style.width = '0%';
+         progressMsg.innerText = 'Đang bắt đầu...';
+      }
+      function hideProgressModal() {
+         progressModal.style.display = 'none';
+         if (currentPollingInterval) clearInterval(currentPollingInterval);
+      }
+
+      function startPollingProgress(successMsg) {
+         if (currentPollingInterval) clearInterval(currentPollingInterval);
+         currentPollingInterval = setInterval(async () => {
+            try {
+               const res = await fetch(`/api/capability/subtitleTask?taskId=${taskId}`);
+               const json = await res.json();
+               if (json.error === 0 && json.data) {
+                  const pct = json.data.process_percent || 0;
+                  const statusMsg = json.data.status_msg || '';
+                  
+                  progressBar.style.width = `${pct}%`;
+                  progressMsg.innerText = statusMsg;
+
+                  // Failed state? Backend GetTaskStatus returns error? Or status_msg tells it?
+                  // Wait, how does it indicate failure?
+                  // Assuming it stops moving or we can check json.data
+                  if (pct >= 100) {
+                     clearInterval(currentPollingInterval);
+                     progressMsg.innerText = successMsg;
+                     setTimeout(() => {
+                        hideProgressModal();
+                        // Reload subtitles
+                        init(); 
+                     }, 1500);
+                  }
+               } else {
+                  clearInterval(currentPollingInterval);
+                  alert('Lỗi fetch progress: ' + json.msg);
+                  hideProgressModal();
+               }
+            } catch(e) {
+               console.error("Polling error", e);
+            }
+         }, 1500);
+      }
 
       init();
     </script>

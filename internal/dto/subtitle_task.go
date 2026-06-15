@@ -96,6 +96,25 @@ type UpdateTaskSubtitlesReq struct {
 	SubtitleOverlay *types.OverlayConfig `json:"subtitle_overlay"`
 }
 
+type RunWhisperTaskReq struct {
+	TaskId         string `json:"task_id"`
+	OriginLanguage string `json:"origin_lang"`
+}
+
+type RunTranslateTaskReq struct {
+	TaskId                 string `json:"task_id"`
+	TargetLang             string `json:"target_lang"`
+	Bilingual              uint8  `json:"bilingual"`
+	TranslationSubtitlePos uint8  `json:"translation_subtitle_pos"`
+	ModalFilter            uint8  `json:"modal_filter"`
+}
+
+type RunTtsOnlyTaskReq struct {
+	TaskId                  string `json:"task_id"`
+	TtsVoiceCode            string `json:"tts_voice_code"`
+	TtsVoiceCloneSrcFileUrl string `json:"tts_voice_clone_src_file_url"`
+}
+
 type ExportVideoTaskReq struct {
 	TaskId    string `json:"task_id"`
 	EnableTts bool   `json:"enable_tts"`

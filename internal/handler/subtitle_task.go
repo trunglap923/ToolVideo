@@ -270,3 +270,87 @@ func (h Handler) DownloadFile(c *gin.Context) {
 	}
 	c.File(localFilePath)
 }
+
+func (h Handler) RunWhisperTask(c *gin.Context) {
+	var req dto.RunWhisperTaskReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.GetLogger().Error("RunWhisperTask ShouldBindJSON err", zap.Error(err))
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	err := h.Service.RunWhisperTask(req)
+	if err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(c, response.Response{
+		Error: 0,
+		Msg:   "Đã bắt đầu trích xuất phụ đề",
+		Data:  nil,
+	})
+}
+
+func (h Handler) RunTranslateTask(c *gin.Context) {
+	var req dto.RunTranslateTaskReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.GetLogger().Error("RunTranslateTask ShouldBindJSON err", zap.Error(err))
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	err := h.Service.RunTranslateTask(req)
+	if err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(c, response.Response{
+		Error: 0,
+		Msg:   "Đã bắt đầu dịch phụ đề",
+		Data:  nil,
+	})
+}
+
+func (h Handler) RunTtsOnlyTask(c *gin.Context) {
+	var req dto.RunTtsOnlyTaskReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		log.GetLogger().Error("RunTtsOnlyTask ShouldBindJSON err", zap.Error(err))
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   "Lỗi tham số",
+			Data:  nil,
+		})
+		return
+	}
+
+	err := h.Service.RunTtsOnlyTask(req)
+	if err != nil {
+		response.R(c, response.Response{
+			Error: -1,
+			Msg:   err.Error(),
+			Data:  nil,
+		})
+		return
+	}
+	response.R(c, response.Response{
+		Error: 0,
+		Msg:   "Đã bắt đầu lồng tiếng",
+		Data:  nil,
+	})
+}

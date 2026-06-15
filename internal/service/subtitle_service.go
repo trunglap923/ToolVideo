@@ -526,3 +526,285 @@ func (s Service) ExportVideoTask(ctx context.Context, req dto.ExportVideoTaskReq
 
 	return nil
 }
+
+func (s Service) RunWhisperTask(req dto.RunWhisperTaskReq) error {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	var taskPtr *types.SubtitleTask
+	if !ok || task == nil {
+		baseDir := filepath.Join("tasks", req.TaskId)
+		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+			return errors.New("Không tìm thấy tác vụ (Task not found)")
+		}
+		taskPtr = &types.SubtitleTask{
+			TaskId: req.TaskId,
+		}
+		storage.SubtitleTasks.Store(req.TaskId, taskPtr)
+	} else {
+		taskPtr = task.(*types.SubtitleTask)
+	}
+
+	baseDir := filepath.Join("tasks", req.TaskId)
+	configPath := filepath.Join(baseDir, "config.json")
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("Không thể đọc config task: %v", err)
+	}
+
+	var stepParam types.SubtitleTaskStepParam
+	if err := json.Unmarshal(configBytes, &stepParam); err != nil {
+		return fmt.Errorf("Lỗi parse config task: %v", err)
+	}
+
+	stepParam.OriginLanguage = types.StandardLanguageCode(req.OriginLanguage)
+	stepParam.TargetLanguage = "none" // Force none to avoid translation
+	stepParam.SubtitleResultType = types.SubtitleResultTypeOriginOnly
+
+	// Update the config file
+	if updatedBytes, err := json.MarshalIndent(stepParam, "", "  "); err == nil {
+		_ = os.WriteFile(configPath, updatedBytes, 0644)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	taskPtr.Cancel = cancel
+	taskPtr.Status = types.SubtitleTaskStatusProcessing
+	taskPtr.ProcessPct = 0
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = fmt.Sprintf("Panic: %v", r)
+			}
+		}()
+		defer func() {
+			if taskPtr.Cancel != nil {
+				taskPtr.Cancel()
+				taskPtr.Cancel = nil
+			}
+		}()
+
+		taskPtr.StatusMsg = "Đang trích xuất âm thanh và tạo phụ đề (STT)..."
+		
+		err = s.audioToSubtitle(ctx, &stepParam)
+		if err != nil {
+			taskPtr.Status = types.SubtitleTaskStatusFailed
+			taskPtr.FailReason = "Lỗi trích xuất phụ đề: " + err.Error()
+			return
+		}
+
+		taskPtr.ProcessPct = 100
+		taskPtr.StatusMsg = "Trích xuất phụ đề hoàn tất"
+	}()
+
+	return nil
+}
+
+func (s Service) RunTranslateTask(req dto.RunTranslateTaskReq) error {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	var taskPtr *types.SubtitleTask
+	if !ok || task == nil {
+		baseDir := filepath.Join("tasks", req.TaskId)
+		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+			return errors.New("Không tìm thấy tác vụ (Task not found)")
+		}
+		taskPtr = &types.SubtitleTask{
+			TaskId: req.TaskId,
+		}
+		storage.SubtitleTasks.Store(req.TaskId, taskPtr)
+	} else {
+		taskPtr = task.(*types.SubtitleTask)
+	}
+
+	baseDir := filepath.Join("tasks", req.TaskId)
+	configPath := filepath.Join(baseDir, "config.json")
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("Không thể đọc config task: %v", err)
+	}
+
+	var stepParam types.SubtitleTaskStepParam
+	if err := json.Unmarshal(configBytes, &stepParam); err != nil {
+		return fmt.Errorf("Lỗi parse config task: %v", err)
+	}
+
+	stepParam.TargetLanguage = types.StandardLanguageCode(req.TargetLang)
+	stepParam.EnableModalFilter = req.ModalFilter == types.SubtitleTaskModalFilterYes
+	
+	var resultType types.SubtitleResultType
+	if req.TargetLang == "none" {
+		resultType = types.SubtitleResultTypeOriginOnly
+	} else {
+		if req.Bilingual == types.SubtitleTaskBilingualYes {
+			if req.TranslationSubtitlePos == types.SubtitleTaskTranslationSubtitlePosTop {
+				resultType = types.SubtitleResultTypeBilingualTranslationOnTop
+			} else {
+				resultType = types.SubtitleResultTypeBilingualTranslationOnBottom
+			}
+		} else {
+			resultType = types.SubtitleResultTypeTargetOnly
+		}
+	}
+	stepParam.SubtitleResultType = resultType
+
+	// Update the config file
+	if updatedBytes, err := json.MarshalIndent(stepParam, "", "  "); err == nil {
+		_ = os.WriteFile(configPath, updatedBytes, 0644)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	taskPtr.Cancel = cancel
+	taskPtr.Status = types.SubtitleTaskStatusProcessing
+	taskPtr.ProcessPct = 0
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = fmt.Sprintf("Panic: %v", r)
+			}
+		}()
+		defer func() {
+			if taskPtr.Cancel != nil {
+				taskPtr.Cancel()
+				taskPtr.Cancel = nil
+			}
+		}()
+
+		taskPtr.StatusMsg = "Đang dịch phụ đề..."
+		
+		if req.TargetLang != "none" {
+			originSrtPath := filepath.Join(baseDir, "origin_language_srt.srt")
+			
+			cues, err := dubbing.ParseSRTFile(originSrtPath)
+			if err != nil {
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = "Lỗi đọc file phụ đề gốc: " + err.Error()
+				return
+			}
+			
+			var srtBlocks []*util.SrtBlock
+			for _, cue := range cues {
+				srtBlocks = append(srtBlocks, &util.SrtBlock{
+					Index:                  cue.Index,
+					Timestamp:              fmt.Sprintf("%s --> %s", dubbing.FormatTimestamp(cue.Start), dubbing.FormatTimestamp(cue.End)),
+					OriginLanguageSentence: cue.Text,
+				})
+			}
+
+			translator := NewTranslator()
+			err = translator.BatchTranslateSrtBlocks(srtBlocks, string(stepParam.OriginLanguage), req.TargetLang, taskPtr)
+			if err != nil {
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = "Lỗi dịch thuật: " + err.Error()
+				return
+			}
+
+			targetSrtFile := filepath.Join(baseDir, types.SubtitleTaskTargetLanguageSrtFileName)
+			bilingualSrtFile := filepath.Join(baseDir, types.SubtitleTaskBilingualSrtFileName)
+			
+			s.YouTubeSubtitleSrv.writeTargetLanguageSrtFile(srtBlocks, targetSrtFile)
+			s.YouTubeSubtitleSrv.writeBilingualSrtFile(srtBlocks, bilingualSrtFile, config.Conf.App.TargetLanguageFirst)
+			
+			stepParam.BilingualSrtFilePath = bilingualSrtFile
+		} else {
+			stepParam.BilingualSrtFilePath = filepath.Join(baseDir, "origin_language_srt.srt")
+		}
+
+		if finalBytes, err := json.MarshalIndent(stepParam, "", "  "); err == nil {
+			_ = os.WriteFile(configPath, finalBytes, 0644)
+		}
+
+		err = s.uploadSubtitles(ctx, &stepParam)
+		if err != nil {
+			taskPtr.Status = types.SubtitleTaskStatusFailed
+			taskPtr.FailReason = "Lỗi cập nhật subtitles: " + err.Error()
+			return
+		}
+
+		taskPtr.ProcessPct = 100
+		taskPtr.StatusMsg = "Dịch phụ đề hoàn tất"
+	}()
+
+	return nil
+}
+
+func (s Service) RunTtsOnlyTask(req dto.RunTtsOnlyTaskReq) error {
+	task, ok := storage.SubtitleTasks.Load(req.TaskId)
+	var taskPtr *types.SubtitleTask
+	if !ok || task == nil {
+		baseDir := filepath.Join("tasks", req.TaskId)
+		if _, err := os.Stat(baseDir); os.IsNotExist(err) {
+			return errors.New("Không tìm thấy tác vụ (Task not found)")
+		}
+		taskPtr = &types.SubtitleTask{
+			TaskId: req.TaskId,
+		}
+		storage.SubtitleTasks.Store(req.TaskId, taskPtr)
+	} else {
+		taskPtr = task.(*types.SubtitleTask)
+	}
+
+	baseDir := filepath.Join("tasks", req.TaskId)
+	configPath := filepath.Join(baseDir, "config.json")
+	configBytes, err := os.ReadFile(configPath)
+	if err != nil {
+		return fmt.Errorf("Không thể đọc config task: %v", err)
+	}
+
+	var stepParam types.SubtitleTaskStepParam
+	if err := json.Unmarshal(configBytes, &stepParam); err != nil {
+		return fmt.Errorf("Lỗi parse config task: %v", err)
+	}
+
+	stepParam.TtsVoiceCode = req.TtsVoiceCode
+	if req.TtsVoiceCloneSrcFileUrl != "" {
+		stepParam.VoiceCloneAudioUrl = req.TtsVoiceCloneSrcFileUrl
+	}
+	stepParam.EnableTts = true
+
+	// Update the config file
+	if updatedBytes, err := json.MarshalIndent(stepParam, "", "  "); err == nil {
+		_ = os.WriteFile(configPath, updatedBytes, 0644)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	taskPtr.Cancel = cancel
+	taskPtr.Status = types.SubtitleTaskStatusProcessing
+	taskPtr.ProcessPct = 0
+
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				taskPtr.Status = types.SubtitleTaskStatusFailed
+				taskPtr.FailReason = fmt.Sprintf("Panic: %v", r)
+			}
+		}()
+		defer func() {
+			if taskPtr.Cancel != nil {
+				taskPtr.Cancel()
+				taskPtr.Cancel = nil
+			}
+		}()
+
+		taskPtr.StatusMsg = "Đang tạo giọng nói nhân tạo (TTS)..."
+		
+		err = s.srtFileToSpeech(ctx, &stepParam)
+		if err != nil {
+			taskPtr.Status = types.SubtitleTaskStatusFailed
+			taskPtr.FailReason = "Lỗi tạo TTS: " + err.Error()
+			return
+		}
+
+		err = s.uploadSubtitles(ctx, &stepParam)
+		if err != nil {
+			taskPtr.Status = types.SubtitleTaskStatusFailed
+			taskPtr.FailReason = "Lỗi cập nhật âm thanh lên UI: " + err.Error()
+			return
+		}
+
+		taskPtr.ProcessPct = 100
+		taskPtr.StatusMsg = "Lồng tiếng hoàn tất"
+	}()
+
+	return nil
+}

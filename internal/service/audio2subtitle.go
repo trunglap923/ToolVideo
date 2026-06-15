@@ -197,6 +197,14 @@ func (s Service) splitTextAndTranslateV2(basePath, inputText string, originLang,
 			defer wg.Done()
 			defer func() { <-signal }()
 
+			if targetLang == "none" {
+				results[index] = &TranslatedItem{
+					OriginText:     originText,
+					TranslatedText: originText,
+				}
+				return
+			}
+
 			contextSentenceNum := 3
 
 			// 生成前面3个句子的string

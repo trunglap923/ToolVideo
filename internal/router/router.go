@@ -24,6 +24,9 @@ func SetupRouter(r *gin.Engine) {
 		api.GET("/task/subtitles", hdl.GetTaskSubtitles)
 		api.POST("/task/update_subtitles", hdl.UpdateTaskSubtitles)
 		api.POST("/task/export_video", hdl.ExportVideoTask)
+		api.POST("/task/run_whisper", hdl.RunWhisperTask)
+		api.POST("/task/run_translate", hdl.RunTranslateTask)
+		api.POST("/task/run_tts_only", hdl.RunTtsOnlyTask)
 	}
 
 	r.GET("/", func(c *gin.Context) {
