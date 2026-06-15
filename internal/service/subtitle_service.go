@@ -361,12 +361,18 @@ func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTask
 		}
 	}
 
-	// Read config to get original video path
+	// Read config to get original video path, blur regions, and subtitle overlay
 	videoUrl := ""
+	var blurRegions []types.BlurRegion
+	var subtitleOverlay *types.OverlayConfig
+
 	configPath := filepath.Join(baseDir, "config.json")
 	if configBytes, err := os.ReadFile(configPath); err == nil {
 		var stepParam types.SubtitleTaskStepParam
 		if json.Unmarshal(configBytes, &stepParam) == nil {
+			blurRegions = stepParam.BlurRegions
+			subtitleOverlay = stepParam.SubtitleOverlay
+
 			videoPath := stepParam.InputVideoPath
 			if videoPath == "" {
 				if strings.HasPrefix(stepParam.Link, "local:") {
@@ -389,9 +395,11 @@ func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTask
 	}
 
 	return &dto.GetTaskSubtitlesResData{
-		TaskId:    req.TaskId,
-		Subtitles: subtitles,
-		VideoUrl:  videoUrl,
+		TaskId:          req.TaskId,
+		Subtitles:       subtitles,
+		VideoUrl:        videoUrl,
+		BlurRegions:     blurRegions,
+		SubtitleOverlay: subtitleOverlay,
 	}, nil
 }
 
@@ -429,8 +437,19 @@ func (s Service) UpdateTaskSubtitles(req dto.UpdateTaskSubtitlesReq) error {
 		return fmt.Errorf("Lỗi lưu file phụ đề: %v", err)
 	}
 
-	// TODO: Trigger re-render video and TTS based on new subtitles
-	// For now, we just save the SRT file successfully.
+	// Load config.json and update BlurRegions and SubtitleOverlay
+	configPath := filepath.Join(baseDir, "config.json")
+	if configBytes, err := os.ReadFile(configPath); err == nil {
+		var stepParam types.SubtitleTaskStepParam
+		if err := json.Unmarshal(configBytes, &stepParam); err == nil {
+			stepParam.BlurRegions = req.BlurRegions
+			stepParam.SubtitleOverlay = req.SubtitleOverlay
+			
+			if updatedBytes, err := json.MarshalIndent(stepParam, "", "  "); err == nil {
+				_ = os.WriteFile(configPath, updatedBytes, 0644)
+			}
+		}
+	}
 
 	return nil
 }

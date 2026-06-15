@@ -20,6 +20,22 @@
         --handle-color: #cbd5e1;
       }
 
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-color);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 5px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--text-secondary);
+      }
+
       * { box-sizing: border-box; }
 
       body {
@@ -61,6 +77,15 @@
         transition: background 0.2s;
       }
       .btn:hover { background: var(--accent-hover); }
+      
+      .active-tab {
+         background: var(--accent) !important;
+         border-color: var(--accent) !important;
+      }
+      .inactive-tab {
+         background: transparent !important;
+         border-color: var(--border-color) !important;
+      }
 
       .main-workspace {
         display: flex;
@@ -81,8 +106,7 @@
       
       .player-container {
         width: 100%;
-        max-width: 800px;
-        aspect-ratio: 16/9;
+        height: 100%;
         background: #111;
         border-radius: 8px;
         overflow: hidden;
@@ -93,6 +117,46 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
+      }
+      
+      .custom-video-controls {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 46px;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        padding: 0 15px;
+        gap: 15px;
+        z-index: 50;
+        backdrop-filter: blur(5px);
+        transition: opacity 0.3s;
+      }
+      .custom-video-controls button {
+        background: transparent;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .custom-video-controls button:hover {
+        color: var(--accent);
+      }
+      .custom-video-controls input[type="range"] {
+        flex: 1;
+        cursor: pointer;
+        accent-color: #ef4444;
+      }
+      .custom-video-controls span {
+        color: white;
+        font-size: 0.85rem;
+        font-family: monospace;
+        user-select: none;
       }
       
       .video-subtitle-overlay {
@@ -113,6 +177,28 @@
       }
 
       /* Subtitle List Area */
+      .interactive-box {
+        position: absolute;
+        border: 2px dashed #ef4444;
+        background: rgba(239, 68, 68, 0.2);
+        cursor: move;
+        z-index: 30;
+        display: none;
+      }
+      .interactive-box.subtitle-box {
+        border-color: #3b82f6;
+        background: rgba(59, 130, 246, 0.2);
+      }
+      .interactive-box .resize-handle {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        background: white;
+        border: 1px solid #333;
+        bottom: -6px;
+        right: -6px;
+        cursor: nwse-resize;
+      }
       .list-area {
         flex: 1;
         background: var(--panel-bg);
@@ -141,10 +227,11 @@
         border: 1px solid var(--border-color);
         border-radius: 6px;
         padding: 10px;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         display: flex;
         flex-direction: column;
         gap: 8px;
+        position: relative;
         transition: border-color 0.2s;
       }
       .sub-item.active {
@@ -155,8 +242,63 @@
       .sub-item-header {
         display: flex;
         justify-content: space-between;
+        align-items: center;
         font-size: 0.8rem;
         color: var(--text-secondary);
+      }
+
+      .sub-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      .action-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      .action-btn:hover {
+        background: rgba(255,255,255,0.1);
+        color: var(--text-primary);
+      }
+      .delete-btn:hover {
+        color: #ff4d4f;
+        background: rgba(255,77,79,0.1);
+      }
+      
+      .add-between-btn {
+        position: absolute;
+        bottom: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 24px;
+        height: 24px;
+        background: var(--border-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.2s, background 0.2s, transform 0.2s;
+        z-index: 10;
+        font-size: 1.2rem;
+        font-weight: bold;
+        line-height: 1;
+      }
+      .sub-item:hover .add-between-btn {
+        opacity: 1;
+      }
+      .add-between-btn:hover {
+        background: var(--accent);
+        transform: translateX(-50%) scale(1.1);
       }
 
       .sub-item textarea {
@@ -196,9 +338,16 @@
         flex: 1;
         position: relative;
         overflow-x: auto;
-        overflow-y: hidden;
+        overflow-y: auto;
         background: var(--timeline-bg);
         padding-top: 20px;
+      }
+      .timeline-tracks::-webkit-scrollbar {
+        height: 0px;
+        width: 0px;
+      }
+      #topScrollContainer::-webkit-scrollbar {
+        height: 16px;
       }
 
       .timeline-ruler {
@@ -284,6 +433,7 @@
     <div class="header">
       <div class="header-title">KrillinAI Studio</div>
       <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn" style="background: #eab308; color: #111;" id="editModeBtn">Tuỳ chỉnh Vị trí & Che mờ</button>
         <label style="font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 5px;">
           <input type="checkbox" id="ttsCheckbox" checked />
           Lồng tiếng AI
@@ -296,29 +446,68 @@
     <div class="main-workspace">
       <div class="player-area">
         <div class="player-container">
-          <video id="videoPlayer" controls>
+          <video id="videoPlayer">
             <!-- Video source dynamically injected -->
           </video>
-          <div class="video-subtitle-overlay" id="subtitleOverlay"></div>
+          
+          <div class="custom-video-controls" id="customControls">
+             <button id="customPlayBtn" title="Play/Pause">▶</button>
+             <input type="range" id="customSeekBar" value="0" min="0" step="0.1">
+             <span id="customTimeDisplay">00:00 / 00:00</span>
+             <button id="customFullscreenBtn" title="Toàn màn hình">⛶</button>
+          </div>
+          
+          <div id="blurBoxesContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none;"></div>
+
+          <div class="video-subtitle-overlay" id="subtitleOverlay" style="z-index: 20;"></div>
+          
+          <div class="interactive-box subtitle-box" id="subtitleOverlayBox" style="z-index: 30; pointer-events: none;">
+             <div class="drag-header" style="font-size: 10px; color: white; background: #3b82f6; padding: 2px; position: absolute; top: -18px; pointer-events: auto; cursor: move;">Vị trí Phụ đề</div>
+             <div id="subtitlePreviewText" style="width: 100%; height: 100%; display: flex; align-items: flex-start; justify-content: center; color: white; font-size: 1.2rem; font-weight: 700; white-space: pre-wrap; text-align: center; text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -2px -2px 4px rgba(0,0,0,0.8); pointer-events: none;"></div>
+             <div class="resize-handle" id="subResizeHandle" style="pointer-events: auto;"></div>
+          </div>
         </div>
       </div>
       <div class="list-area">
-        <div class="list-header">
-          <span>Phụ đề</span>
-          <span style="font-size:0.8rem;color:var(--text-secondary)" id="subCount">0 mục</span>
+        <div class="list-header" style="gap: 10px;">
+           <button id="tabSubtitles" class="btn active-tab" style="flex: 1; padding: 4px;">Phụ đề (<span id="subCount">0</span>)</button>
+           <button id="tabBlurs" class="btn inactive-tab" style="flex: 1; padding: 4px; border: 1px solid var(--border-color);">Che mờ (<span id="blurCount">0</span>)</button>
+        </div>
+        <div id="subToolbar" style="padding: 10px 10px 0 10px; display: flex; justify-content: flex-end;">
+           <button class="btn" id="deleteAllSubBtn" style="background: #ef4444; padding: 4px 12px; font-size: 0.85rem;" title="Xoá tất cả phụ đề hiện có">🗑 Xoá tất cả Phụ đề</button>
         </div>
         <div class="list-content" id="listContent">
           <!-- Subtitle items dynamically injected -->
+        </div>
+        <div class="list-content" id="blurListContent" style="display: none;">
+          <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn" id="addBlurBtn" style="flex: 1;">+ Thêm</button>
+            <button class="btn" id="autoBlurBtn" style="flex: 1.5; background: #8b5cf6;" title="Tự động tạo vùng che mờ khớp với thời gian của tất cả phụ đề">Tự động tạo</button>
+            <button class="btn" id="deleteAllBlurBtn" style="flex: 1; background: #ef4444;" title="Xoá tất cả vùng che mờ">🗑 Xoá tất cả</button>
+          </div>
+          <div style="margin-bottom: 10px; font-size: 0.9rem; color: var(--text-secondary); background: var(--bg-color); padding: 8px; border-radius: 6px; border: 1px solid var(--border-color);">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+               <input type="checkbox" id="syncBlurCheckbox" checked style="accent-color: #8b5cf6; width: 16px; height: 16px;">
+               Đồng bộ vị trí & kích thước tất cả các ô
+            </label>
+          </div>
+          <div id="blurItemsContainer"></div>
         </div>
       </div>
     </div>
 
     <div class="timeline-area">
+      <div id="topScrollContainer" style="overflow-x: auto; overflow-y: hidden; background: var(--panel-bg);">
+        <div id="topScrollContent" style="height: 1px;"></div>
+      </div>
       <div class="timeline-tracks" id="timelineTracks">
         <div class="timeline-ruler"></div>
         <div class="playhead" id="playhead" style="left: 0px"></div>
         <div class="sub-track" id="subTrack">
           <!-- Blocks dynamically injected -->
+        </div>
+        <div class="sub-track" id="blurTrack" style="position: relative; margin-top: 5px; border-top: 1px dashed var(--border-color); padding-top: 5px; height: 30px; background: rgba(239, 68, 68, 0.05);">
+          <!-- Blur blocks dynamically injected -->
         </div>
       </div>
     </div>
@@ -335,10 +524,22 @@
       const exportBtn = document.getElementById('exportBtn');
       const ttsCheckbox = document.getElementById('ttsCheckbox');
       const timelineTracks = document.getElementById('timelineTracks');
+      const topScrollContainer = document.getElementById('topScrollContainer');
+      const topScrollContent = document.getElementById('topScrollContent');
       const subCount = document.getElementById('subCount');
       const subtitleOverlay = document.getElementById('subtitleOverlay');
 
+      // Sync scrollbars
+      topScrollContainer.addEventListener('scroll', () => {
+        timelineTracks.scrollLeft = topScrollContainer.scrollLeft;
+      });
+      timelineTracks.addEventListener('scroll', () => {
+        topScrollContainer.scrollLeft = timelineTracks.scrollLeft;
+      });
+
       let subtitles = [];
+      let blurRegions = [];
+      let subtitleConfig = { x: 0.05, y: 0.8, width: 0.9, height: 0.15 };
       let duration = 0;
       const pixelsPerSecond = 100; // Zoom level
 
@@ -357,6 +558,14 @@
               subtitles = json.data.subtitles;
               subCount.innerText = `${subtitles.length} mục`;
             }
+            if (json.data.blur_regions) {
+              blurRegions = json.data.blur_regions;
+              document.getElementById('blurCount').innerText = blurRegions.length;
+            }
+            if (json.data.subtitle_overlay) {
+              subtitleConfig = json.data.subtitle_overlay;
+            }
+            
             if (json.data.video_url) {
               videoPlayer.src = json.data.video_url;
             } else {
@@ -386,7 +595,102 @@
         
         saveBtn.addEventListener('click', saveSubtitles);
         exportBtn.addEventListener('click', exportVideo);
+
+        subTrack.addEventListener('dblclick', (e) => {
+          const rect = subTrack.getBoundingClientRect();
+          const clickX = e.clientX - rect.left + timelineTracks.scrollLeft;
+          const clickTime = clickX / pixelsPerSecond;
+          
+          // Check if click is inside an existing subtitle
+          for (let i = 0; i < subtitles.length; i++) {
+             if (clickTime >= subtitles[i].start && clickTime <= subtitles[i].end) {
+                return; // Clicking on an existing subtitle does nothing
+             }
+          }
+
+          // Find the index to insert
+          let insertIdx = 0;
+          for (let i = 0; i < subtitles.length; i++) {
+             if (clickTime > subtitles[i].end) {
+                insertIdx = i + 1;
+             }
+          }
+
+          const newStart = clickTime;
+          let newEnd = newStart + 2.0;
+          
+          // Limit by next subtitle start
+          if (insertIdx < subtitles.length && newEnd > subtitles[insertIdx].start) {
+             newEnd = subtitles[insertIdx].start;
+          }
+          if (newEnd > duration) {
+             newEnd = duration;
+          }
+
+          const newSub = {
+             index: 0,
+             start: newStart,
+             end: newEnd,
+             text: ""
+          };
+
+          subtitles.splice(insertIdx, 0, newSub);
+          window.reindexSubtitles();
+          renderTimeline();
+          renderList();
+        });
       }
+
+      window.addSubtitle = function(e, idx) {
+        e.stopPropagation();
+        const currentSub = subtitles[idx];
+        const newStart = currentSub.end;
+        let newEnd = newStart + 2.0;
+        
+        if (idx + 1 < subtitles.length && newEnd > subtitles[idx+1].start) {
+           newEnd = subtitles[idx+1].start;
+        }
+        if (newEnd > duration) newEnd = duration;
+
+        const newSub = {
+           index: 0,
+           start: newStart,
+           end: newEnd,
+           text: ""
+        };
+
+        subtitles.splice(idx + 1, 0, newSub);
+        window.reindexSubtitles();
+        renderTimeline();
+        renderList();
+      };
+
+      window.deleteSubtitle = function(e, idx) {
+        e.stopPropagation();
+        if (confirm("Bạn có chắc chắn muốn xoá phụ đề này?")) {
+           subtitles.splice(idx, 1);
+           window.reindexSubtitles();
+           renderTimeline();
+           renderList();
+        }
+      };
+
+      window.deleteBlurRegion = function(e, idx) {
+        e.stopPropagation();
+        if (confirm("Bạn có chắc chắn muốn xoá vùng che mờ này?")) {
+           blurRegions.splice(idx, 1);
+           renderBlurList();
+           renderBlurTimeline();
+           if (isEditMode) updateOverlayBoxes();
+        }
+      };
+
+      window.reindexSubtitles = function() {
+        subtitles.forEach((sub, i) => {
+           sub.index = i + 1;
+        });
+        subCount.innerText = `${subtitles.length} mục`;
+      };
 
       function formatTime(sec) {
         const d = new Date(sec * 1000);
@@ -406,8 +710,12 @@
             <div class="sub-item-header">
               <span>#${sub.index}</span>
               <span id="time-txt-${i}">${formatTime(sub.start)} --> ${formatTime(sub.end)}</span>
+              <div class="sub-actions">
+                  <button class="action-btn delete-btn" title="Xoá phụ đề" onclick="window.deleteSubtitle(event, ${i})">🗑</button>
+              </div>
             </div>
             <textarea rows="2" data-idx="${i}">${sub.text}</textarea>
+            <button class="add-between-btn" title="Thêm phụ đề ở đây" onclick="window.addSubtitle(event, ${i})">+</button>
           `;
           
           const textarea = div.querySelector('textarea');
@@ -428,7 +736,9 @@
 
       function renderTimeline() {
         subTrack.innerHTML = '';
-        subTrack.style.width = `${duration * pixelsPerSecond}px`;
+        const totalWidth = duration * pixelsPerSecond;
+        subTrack.style.width = `${totalWidth}px`;
+        topScrollContent.style.width = `${totalWidth}px`;
         
         subtitles.forEach((sub, i) => {
           const block = document.createElement('div');
@@ -453,12 +763,87 @@
           
           block.addEventListener('click', (e) => {
              videoPlayer.currentTime = sub.start;
-             highlightItem(i);
+             document.getElementById('tabSubtitles').click();
+             // small delay to ensure display: block is processed before scrolling
+             setTimeout(() => highlightItem(i, true, 'sub'), 50);
           });
 
           makeDraggable(block, leftHandle, rightHandle, i);
           
           subTrack.appendChild(block);
+        });
+        renderBlurTimeline();
+      }
+
+      function renderBlurTimeline() {
+        const blurTrack = document.getElementById('blurTrack');
+        blurTrack.innerHTML = '';
+        const totalWidth = duration * pixelsPerSecond;
+        blurTrack.style.width = `${totalWidth}px`;
+        
+        // Compute layers for overlapping blur regions
+        const layers = []; // array of end times
+        const blurLayers = new Array(blurRegions.length).fill(0);
+        
+        // Sort indices by start time to process chronologically
+        const sortedIndices = blurRegions.map((_, i) => i).sort((a, b) => blurRegions[a].start - blurRegions[b].start);
+        
+        sortedIndices.forEach(idx => {
+           const blur = blurRegions[idx];
+           let placed = false;
+           for (let l = 0; l < layers.length; l++) {
+              if (layers[l] <= blur.start + 0.1) { // 0.1s margin
+                 layers[l] = blur.end;
+                 blurLayers[idx] = l;
+                 placed = true;
+                 break;
+              }
+           }
+           if (!placed) {
+              blurLayers[idx] = layers.length;
+              layers.push(blur.end);
+           }
+        });
+        
+        const rowHeight = 26; // 20px block + 6px gap
+        blurTrack.style.height = `${Math.max(1, layers.length) * rowHeight + 10}px`;
+        
+        blurRegions.forEach((blur, i) => {
+          const block = document.createElement('div');
+          block.className = 'sub-block';
+          block.id = `blur-block-${i}`;
+          block.style.background = 'rgba(239, 68, 68, 0.5)';
+          block.style.border = '1px solid #b91c1c';
+          
+          const layerIdx = blurLayers[i];
+          block.style.top = `${layerIdx * rowHeight + 5}px`;
+          block.style.height = '20px';
+          
+          const leftPx = blur.start * pixelsPerSecond;
+          const widthPx = (blur.end - blur.start) * pixelsPerSecond;
+          
+          block.style.left = `${leftPx}px`;
+          block.style.width = `${widthPx}px`;
+          
+          const leftHandle = document.createElement('div');
+          leftHandle.className = 'handle handle-left';
+          
+          const rightHandle = document.createElement('div');
+          rightHandle.className = 'handle handle-right';
+          
+          block.appendChild(leftHandle);
+          block.appendChild(rightHandle);
+          block.append(`Che mờ #${i+1}`);
+          
+          block.addEventListener('click', (e) => {
+             videoPlayer.currentTime = blur.start;
+             document.getElementById('tabBlurs').click();
+             setTimeout(() => highlightItem(i, true, 'blur'), 50);
+          });
+
+          makeBlurDraggable(block, leftHandle, rightHandle, i);
+          
+          blurTrack.appendChild(block);
         });
       }
 
@@ -489,17 +874,19 @@
       }
 
       let activeIdx = -1;
-      function highlightItem(idx, scrollList = true) {
-        if (activeIdx === idx) return;
+      let activeType = 'sub';
+      function highlightItem(idx, scrollList = true, type = 'sub') {
+        if (activeIdx === idx && activeType === type) return;
         if (activeIdx !== -1) {
-          const oldList = document.getElementById(`list-item-${activeIdx}`);
-          const oldBlock = document.getElementById(`block-${activeIdx}`);
+          const oldList = document.getElementById(activeType === 'sub' ? `list-item-${activeIdx}` : `blur-list-item-${activeIdx}`);
+          const oldBlock = document.getElementById(activeType === 'sub' ? `block-${activeIdx}` : `blur-block-${activeIdx}`);
           if (oldList) oldList.classList.remove('active');
           if (oldBlock) oldBlock.classList.remove('active');
         }
         activeIdx = idx;
-        const newList = document.getElementById(`list-item-${idx}`);
-        const newBlock = document.getElementById(`block-${idx}`);
+        activeType = type;
+        const newList = document.getElementById(type === 'sub' ? `list-item-${idx}` : `blur-list-item-${idx}`);
+        const newBlock = document.getElementById(type === 'sub' ? `block-${idx}` : `blur-block-${idx}`);
         if (newList) {
            newList.classList.add('active');
            if (scrollList) newList.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -618,6 +1005,110 @@
          }
       }
 
+      function updateBlurListTime(idx) {
+         const timeTxt = document.getElementById(`blur-time-txt-${idx}`);
+         if (timeTxt) {
+            timeTxt.innerText = `${formatTime(blurRegions[idx].start)} --> ${formatTime(blurRegions[idx].end)}`;
+         }
+      }
+
+      function makeBlurDraggable(block, leftHandle, rightHandle, idx) {
+        let isDragging = false;
+        let isResizingLeft = false;
+        let isResizingRight = false;
+        let startX = 0;
+        let initialStart = 0;
+        let initialEnd = 0;
+
+        leftHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          isResizingLeft = true;
+          startX = e.clientX;
+          initialStart = blurRegions[idx].start;
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        rightHandle.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+          isResizingRight = true;
+          startX = e.clientX;
+          initialEnd = blurRegions[idx].end;
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        block.addEventListener('mousedown', (e) => {
+          if (e.target === leftHandle || e.target === rightHandle) return;
+          isDragging = true;
+          startX = e.clientX;
+          initialStart = blurRegions[idx].start;
+          initialEnd = blurRegions[idx].end;
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        function onMouseMove(e) {
+          const deltaX = e.clientX - startX;
+          const deltaSec = deltaX / pixelsPerSecond;
+          
+          if (isResizingLeft) {
+            let newStart = initialStart + deltaSec;
+            if (newStart < 0) newStart = 0;
+            if (newStart >= blurRegions[idx].end - 0.5) newStart = blurRegions[idx].end - 0.5;
+
+            blurRegions[idx].start = newStart;
+            block.style.left = `${newStart * pixelsPerSecond}px`;
+            block.style.width = `${(blurRegions[idx].end - newStart) * pixelsPerSecond}px`;
+            updateBlurListTime(idx);
+
+          } else if (isResizingRight) {
+            let newEnd = initialEnd + deltaSec;
+            if (newEnd > duration) newEnd = duration;
+            if (newEnd <= blurRegions[idx].start + 0.5) newEnd = blurRegions[idx].start + 0.5;
+
+            blurRegions[idx].end = newEnd;
+            block.style.width = `${(newEnd - blurRegions[idx].start) * pixelsPerSecond}px`;
+            updateBlurListTime(idx);
+
+          } else if (isDragging) {
+            const width = initialEnd - initialStart;
+            let newStart = initialStart + deltaSec;
+            
+            if (newStart < 0) newStart = 0;
+            let newEnd = newStart + width;
+            if (newEnd > duration) {
+               newEnd = duration;
+               newStart = newEnd - width;
+            }
+
+            blurRegions[idx].start = newStart;
+            blurRegions[idx].end = newEnd;
+            
+            block.style.left = `${newStart * pixelsPerSecond}px`;
+            block.style.width = `${(newEnd - newStart) * pixelsPerSecond}px`;
+            updateBlurListTime(idx);
+          }
+        }
+
+        function onMouseUp() {
+          isDragging = false;
+          isResizingLeft = false;
+          isResizingRight = false;
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          
+          // Delay re-rendering to allow the 'click' event to fire first
+          setTimeout(() => {
+              renderBlurTimeline();
+              if (activeIdx !== -1 && activeType === 'blur') {
+                 const newBlock = document.getElementById(`blur-block-${activeIdx}`);
+                 if (newBlock) newBlock.classList.add('active');
+              }
+          }, 10);
+        }
+      }
+
       async function saveSubtitles() {
         saveBtn.innerText = "Đang lưu...";
         saveBtn.disabled = true;
@@ -627,7 +1118,9 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               task_id: taskId,
-              subtitles: subtitles
+              subtitles: subtitles,
+              blur_regions: blurRegions,
+              subtitle_overlay: subtitleConfig
             })
           });
           const json = await res.json();
@@ -682,6 +1175,426 @@
             videoPlayer.currentTime = clickX / pixelsPerSecond;
          }
       });
+
+      // ==========================================
+      // Edit Mode & Interactive Boxes Logic
+      // ==========================================
+      const tabSubtitles = document.getElementById('tabSubtitles');
+      const tabBlurs = document.getElementById('tabBlurs');
+      const blurListContent = document.getElementById('blurListContent');
+      const subToolbar = document.getElementById('subToolbar');
+
+      tabSubtitles.addEventListener('click', () => {
+         tabSubtitles.classList.add('active-tab');
+         tabSubtitles.classList.remove('inactive-tab');
+         tabBlurs.classList.add('inactive-tab');
+         tabBlurs.classList.remove('active-tab');
+         listContent.style.display = 'block';
+         subToolbar.style.display = 'flex';
+         blurListContent.style.display = 'none';
+      });
+      
+      tabBlurs.addEventListener('click', () => {
+         tabBlurs.classList.add('active-tab');
+         tabBlurs.classList.remove('inactive-tab');
+         tabSubtitles.classList.add('inactive-tab');
+         tabSubtitles.classList.remove('active-tab');
+         listContent.style.display = 'none';
+         subToolbar.style.display = 'none';
+         blurListContent.style.display = 'block';
+         renderBlurList();
+      });
+
+      let isEditMode = false;
+      const editModeBtn = document.getElementById('editModeBtn');
+      const subtitleOverlayBox = document.getElementById('subtitleOverlayBox');
+      const blurBoxesContainer = document.getElementById('blurBoxesContainer');
+      const addBlurBtn = document.getElementById('addBlurBtn');
+      const blurItemsContainer = document.getElementById('blurItemsContainer');
+
+      editModeBtn.addEventListener('click', () => {
+         isEditMode = !isEditMode;
+         if (isEditMode) {
+             editModeBtn.style.background = '#22c55e';
+             editModeBtn.innerText = 'Đang bật Tuỳ chỉnh';
+             subtitleOverlayBox.style.display = 'block';
+         } else {
+             editModeBtn.style.background = '#eab308';
+             editModeBtn.innerText = 'Tuỳ chỉnh Vị trí & Che mờ';
+             subtitleOverlayBox.style.display = 'none';
+             blurBoxesContainer.style.zIndex = '10'; // Reset z-index so subtitleOverlay is above
+         }
+         updateOverlayBoxes();
+      });
+
+      function getVideoVisualRect() {
+          if (!videoPlayer.videoWidth) return { left: 0, top: 0, width: videoPlayer.offsetWidth, height: videoPlayer.offsetHeight };
+          const videoRatio = videoPlayer.videoWidth / videoPlayer.videoHeight;
+          const containerRatio = videoPlayer.offsetWidth / videoPlayer.offsetHeight;
+          let width, height, left, top;
+          
+          if (videoRatio > containerRatio) {
+              width = videoPlayer.offsetWidth;
+              height = width / videoRatio;
+              left = 0;
+              top = (videoPlayer.offsetHeight - height) / 2;
+          } else {
+              height = videoPlayer.offsetHeight;
+              width = height * videoRatio;
+              top = 0;
+              left = (videoPlayer.offsetWidth - width) / 2;
+          }
+          return { left, top, width, height };
+      }
+
+      function updateOverlayBoxes() {
+          const rect = getVideoVisualRect();
+          
+          // Subtitle box
+          subtitleOverlayBox.style.left = `${rect.left + subtitleConfig.x * rect.width}px`;
+          subtitleOverlayBox.style.top = `${rect.top + subtitleConfig.y * rect.height}px`;
+          subtitleOverlayBox.style.width = `${subtitleConfig.width * rect.width}px`;
+          subtitleOverlayBox.style.height = `${subtitleConfig.height * rect.height}px`;
+          
+          // Blur boxes
+          blurBoxesContainer.innerHTML = '';
+          const currentTime = videoPlayer.currentTime;
+          
+          blurRegions.forEach((blur, idx) => {
+              if (currentTime >= blur.start && currentTime <= blur.end) {
+                  const box = document.createElement('div');
+                  box.className = 'interactive-box blur-box-item';
+                  box.style.display = 'block';
+                  box.style.left = `${rect.left + blur.x * rect.width}px`;
+                  box.style.top = `${rect.top + blur.y * rect.height}px`;
+                  box.style.width = `${blur.width * rect.width}px`;
+                  box.style.height = `${blur.height * rect.height}px`;
+                  
+                  if (isEditMode) {
+                      box.style.border = '2px dashed #ef4444';
+                      box.style.background = 'rgba(239, 68, 68, 0.1)';
+                      box.style.backdropFilter = 'blur(10px)'; // Visual effect
+                      box.style.webkitBackdropFilter = 'blur(10px)'; // Safari support
+                      box.style.pointerEvents = 'none'; // allow clicking through to video controls
+                      
+                      box.innerHTML = `
+                          <div class="drag-header" style="font-size: 10px; color: white; background: #ef4444; padding: 2px; position: absolute; top: -18px; pointer-events: auto; cursor: move; white-space: nowrap;">Che mờ #${idx+1}</div>
+                          <div class="resize-handle" style="pointer-events: auto;"></div>
+                      `;
+                      
+                      makeBoxInteractive(box, blur, () => {
+                         renderBlurList();
+                         renderBlurTimeline();
+                      });
+                  } else {
+                      box.style.border = 'none';
+                      box.style.background = 'transparent';
+                      box.style.backdropFilter = 'blur(10px)'; // Visual effect
+                      box.style.webkitBackdropFilter = 'blur(10px)'; // Safari support
+                      box.style.pointerEvents = 'none'; // allow clicking through to video
+                      box.innerHTML = '';
+                  }
+                  
+                  blurBoxesContainer.appendChild(box);
+              }
+          });
+      }
+
+      function makeBoxInteractive(element, configObj, callback) {
+          const handle = element.querySelector('.resize-handle');
+          let isDragging = false;
+          let isResizing = false;
+          let startX, startY, startConfigX, startConfigY, startConfigW, startConfigH;
+          
+          element.addEventListener('mousedown', (e) => {
+              const dragHeader = element.querySelector('.drag-header');
+              if (e.target === handle) {
+                  isResizing = true;
+              } else if (e.target === dragHeader) {
+                  isDragging = true;
+              } else {
+                  return; // Ignore clicks that somehow hit the container body
+              }
+              const rect = getVideoVisualRect();
+              startX = e.clientX;
+              startY = e.clientY;
+              startConfigX = configObj.x;
+              startConfigY = configObj.y;
+              startConfigW = configObj.width;
+              startConfigH = configObj.height;
+              
+              // Bring active box to front
+              if (element.id === 'subtitleOverlayBox') {
+                  element.style.zIndex = '40';
+                  blurBoxesContainer.style.zIndex = '30';
+              } else {
+                  blurBoxesContainer.style.zIndex = '40';
+                  subtitleOverlayBox.style.zIndex = '30';
+                  Array.from(blurBoxesContainer.children).forEach(c => c.style.zIndex = '1');
+                  element.style.zIndex = '2';
+              }
+              
+              const onMouseMove = (ev) => {
+                  const dx = (ev.clientX - startX) / rect.width;
+                  const dy = (ev.clientY - startY) / rect.height;
+                  
+                  let newX = configObj.x, newY = configObj.y, newW = configObj.width, newH = configObj.height;
+
+                  if (isDragging) {
+                      newX = Math.min(Math.max(0, startConfigX + dx), 1 - configObj.width);
+                      newY = Math.min(Math.max(0, startConfigY + dy), 1 - configObj.height);
+                  } else if (isResizing) {
+                      newW = Math.min(Math.max(0.05, startConfigW + dx), 1 - configObj.x);
+                      newH = Math.min(Math.max(0.05, startConfigH + dy), 1 - configObj.y);
+                  }
+                  
+                  // Apply synchronization if enabled
+                  const syncCheckbox = document.getElementById('syncBlurCheckbox');
+                  if (element.id !== 'subtitleOverlayBox' && syncCheckbox && syncCheckbox.checked) {
+                      blurRegions.forEach(b => {
+                          if (isDragging) { b.x = newX; b.y = newY; }
+                          if (isResizing) { b.width = newW; b.height = newH; }
+                      });
+                  } else {
+                      if (isDragging) { configObj.x = newX; configObj.y = newY; }
+                      if (isResizing) { configObj.width = newW; configObj.height = newH; }
+                  }
+                  
+                  // Apply styles directly instead of rebuilding DOM to preserve drag state
+                  element.style.left = `${rect.left + configObj.x * rect.width}px`;
+                  element.style.top = `${rect.top + configObj.y * rect.height}px`;
+                  element.style.width = `${configObj.width * rect.width}px`;
+                  element.style.height = `${configObj.height * rect.height}px`;
+              };
+              
+              const onMouseUp = () => {
+                  isDragging = false;
+                  isResizing = false;
+                  document.removeEventListener('mousemove', onMouseMove);
+                  document.removeEventListener('mouseup', onMouseUp);
+                  if (callback) callback();
+              };
+              
+              document.addEventListener('mousemove', onMouseMove);
+              document.addEventListener('mouseup', onMouseUp);
+              e.preventDefault();
+          });
+      }
+
+      makeBoxInteractive(subtitleOverlayBox, subtitleConfig, () => {});
+
+      window.addEventListener('resize', () => { if(isEditMode) updateOverlayBoxes(); });
+
+      // Blur List UI
+      function renderBlurList() {
+          blurItemsContainer.innerHTML = '';
+          blurRegions.forEach((blur, idx) => {
+              const div = document.createElement('div');
+              div.className = 'sub-item';
+              div.id = `blur-list-item-${idx}`;
+              
+              div.innerHTML = `
+                <div class="sub-item-header">
+                  <span>Che mờ #${idx+1}</span>
+                  <span id="blur-time-txt-${idx}">${formatTime(blur.start)} --> ${formatTime(blur.end)}</span>
+                  <div class="sub-actions">
+                      <button class="action-btn delete-btn" title="Xoá vùng che mờ" onclick="window.deleteBlurRegion(event, ${idx})">🗑</button>
+                  </div>
+                </div>
+                <div style="padding: 10px; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.1);">
+                   <label style="font-size: 0.8rem; color: var(--text-secondary);">Start:</label>
+                   <input type="number" step="0.1" value="${blur.start}" style="width:70px; background: var(--bg-color); color: white; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px;" onchange="updateBlurTime(${idx}, 'start', this.value)">
+                   <label style="font-size: 0.8rem; color: var(--text-secondary);">End:</label>
+                   <input type="number" step="0.1" value="${blur.end}" style="width:70px; background: var(--bg-color); color: white; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 4px;" onchange="updateBlurTime(${idx}, 'end', this.value)">
+                </div>
+              `;
+              
+              div.addEventListener('click', () => {
+                videoPlayer.currentTime = blur.start;
+                highlightItem(idx, true, 'blur');
+              });
+              
+              blurItemsContainer.appendChild(div);
+          });
+          document.getElementById('blurCount').innerText = blurRegions.length;
+      }
+
+      window.updateBlurTime = (idx, field, val) => {
+          blurRegions[idx][field] = parseFloat(val);
+          renderBlurTimeline();
+          updateBlurListTime(idx);
+          if (isEditMode) updateOverlayBoxes();
+      };
+      
+      window.deleteBlur = (idx) => {
+          blurRegions.splice(idx, 1);
+          renderBlurList();
+          if (isEditMode) updateOverlayBoxes();
+      };
+
+      addBlurBtn.addEventListener('click', () => {
+          blurRegions.push({
+              x: 0.2, y: 0.2, width: 0.3, height: 0.2,
+              start: videoPlayer.currentTime,
+              end: videoPlayer.currentTime + 5.0
+          });
+          renderBlurList();
+          renderBlurTimeline();
+          if (isEditMode) updateOverlayBoxes();
+      });
+      
+      const autoBlurBtn = document.getElementById('autoBlurBtn');
+      autoBlurBtn.addEventListener('click', () => {
+          if (subtitles.length === 0) {
+              alert("Không có phụ đề nào để tạo vùng che mờ tự động!");
+              return;
+          }
+          if (blurRegions.length > 0 && !confirm('Hành động này sẽ xoá tất cả vùng che mờ hiện tại và tạo lại tự động bám theo danh sách phụ đề. Bạn có chắc chắn?')) return;
+          
+          let template = { x: 0.1, y: 0.8, width: 0.8, height: 0.15 };
+          if (blurRegions.length > 0) {
+              template = { x: blurRegions[0].x, y: blurRegions[0].y, width: blurRegions[0].width, height: blurRegions[0].height };
+          }
+          
+          blurRegions = subtitles.map(sub => ({
+              x: template.x,
+              y: template.y,
+              width: template.width,
+              height: template.height,
+              start: sub.start,
+              end: sub.end
+          }));
+          
+          renderBlurList();
+          renderBlurTimeline();
+          if (isEditMode) updateOverlayBoxes();
+      });
+      
+      const deleteAllBlurBtn = document.getElementById('deleteAllBlurBtn');
+      deleteAllBlurBtn.addEventListener('click', () => {
+          if (blurRegions.length === 0) return;
+          if (confirm('Bạn có chắc chắn muốn xoá toàn bộ các vùng che mờ?')) {
+              blurRegions = [];
+              renderBlurList();
+              renderBlurTimeline();
+              if (isEditMode) updateOverlayBoxes();
+          }
+      });
+      
+      const deleteAllSubBtn = document.getElementById('deleteAllSubBtn');
+      deleteAllSubBtn.addEventListener('click', () => {
+          if (subtitles.length === 0) return;
+          if (confirm('Bạn có CỰC KỲ chắc chắn muốn xoá TOÀN BỘ phụ đề? Hành động này không thể hoàn tác!')) {
+              subtitles = [];
+              renderList();
+              renderTimeline();
+              window.updatePlayhead();
+          }
+      });
+
+      // Override updatePlayhead to sync overlays
+      const originalUpdatePlayhead = window.updatePlayhead;
+      window.updatePlayhead = function() {
+          const currentTime = videoPlayer.currentTime;
+          playhead.style.left = `${currentTime * pixelsPerSecond}px`;
+          
+          let currentSub = subtitles.find(s => currentTime >= s.start && currentTime <= s.end);
+          if (currentSub && ttsCheckbox.checked) {
+            subtitleOverlay.style.display = 'block';
+            subtitleOverlay.innerText = currentSub.text;
+            
+            const previewText = document.getElementById('subtitlePreviewText');
+            if (previewText) previewText.innerText = currentSub.text;
+            
+            // Sync overlay position to config (only visually useful if not in edit mode)
+            if (!isEditMode) {
+               const rect = getVideoVisualRect();
+               subtitleOverlay.style.left = `${rect.left + subtitleConfig.x * rect.width + (subtitleConfig.width * rect.width)/2}px`;
+               subtitleOverlay.style.top = `${rect.top + subtitleConfig.y * rect.height}px`;
+               subtitleOverlay.style.bottom = 'auto';
+               subtitleOverlay.style.width = `${subtitleConfig.width * rect.width}px`;
+            } else {
+               subtitleOverlay.style.display = 'none'; // hide preview when editing box
+            }
+          } else {
+            subtitleOverlay.style.display = 'none';
+            const previewText = document.getElementById('subtitlePreviewText');
+            if (previewText) previewText.innerText = '';
+          }
+          
+          updateOverlayBoxes(); // always update, even if not in edit mode, so blur preview works
+      };
+
+      videoPlayer.addEventListener('timeupdate', window.updatePlayhead);
+      
+      // Custom Controls Logic
+      const customPlayBtn = document.getElementById('customPlayBtn');
+      const customSeekBar = document.getElementById('customSeekBar');
+      const customTimeDisplay = document.getElementById('customTimeDisplay');
+      const customFullscreenBtn = document.getElementById('customFullscreenBtn');
+
+      function formatTimeDisplay(seconds) {
+          if (isNaN(seconds)) return "00:00";
+          const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+          const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+          return `${m}:${s}`;
+      }
+
+      customPlayBtn.addEventListener('click', () => {
+          if (videoPlayer.paused) {
+              videoPlayer.play();
+          } else {
+              videoPlayer.pause();
+          }
+      });
+
+      videoPlayer.addEventListener('play', () => customPlayBtn.innerText = '⏸');
+      videoPlayer.addEventListener('pause', () => customPlayBtn.innerText = '▶');
+
+      videoPlayer.addEventListener('loadedmetadata', () => {
+          customSeekBar.max = videoPlayer.duration;
+      });
+
+      videoPlayer.addEventListener('timeupdate', () => {
+          customSeekBar.value = videoPlayer.currentTime;
+          customTimeDisplay.innerText = `${formatTimeDisplay(videoPlayer.currentTime)} / ${formatTimeDisplay(videoPlayer.duration)}`;
+      });
+
+      customSeekBar.addEventListener('input', () => {
+          videoPlayer.currentTime = customSeekBar.value;
+      });
+
+      customFullscreenBtn.addEventListener('click', () => {
+          const container = document.querySelector('.player-container');
+          if (!document.fullscreenElement) {
+              container.requestFullscreen().catch(err => {
+                  console.error(`Error attempting to enable fullscreen: ${err.message}`);
+              });
+          } else {
+              document.exitFullscreen();
+          }
+      });
+
+      // Show/Hide controls on hover
+      const playerContainer = document.querySelector('.player-container');
+      const customControls = document.getElementById('customControls');
+      let hideControlsTimeout;
+      
+      function showControls() {
+          customControls.style.opacity = '1';
+          clearTimeout(hideControlsTimeout);
+          if (!videoPlayer.paused) {
+              hideControlsTimeout = setTimeout(() => {
+                  customControls.style.opacity = '0';
+              }, 2500);
+          }
+      }
+      
+      playerContainer.addEventListener('mousemove', showControls);
+      playerContainer.addEventListener('mouseleave', () => {
+          if (!videoPlayer.paused) customControls.style.opacity = '0';
+      });
+      videoPlayer.addEventListener('pause', showControls);
 
       init();
     </script>

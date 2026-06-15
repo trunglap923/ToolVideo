@@ -327,6 +327,22 @@ type SubtitleFileInfo struct {
 	LanguageIdentifier string // 在最终下载的文件里标识语言，如zh_cn，en，bilingual
 }
 
+type BlurRegion struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+	Start  float64 `json:"start"`
+	End    float64 `json:"end"`
+}
+
+type OverlayConfig struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
+
 type SubtitleTaskStepParam struct {
 	TaskId                      string
 	TaskPtr                     *SubtitleTask // 和storage里面对应
@@ -356,6 +372,8 @@ type SubtitleTaskStepParam struct {
 	VideoWithTtsFilePath        string                  // 替换源视频的音频为tts结果后的视频路径
 	VttSwitch                   bool                    // 是否使用VTT格式字幕文件
 	SubtitleStyle               *subtitlestyle.StyleSet // CLI/Agent 传入的字幕样式；nil 时使用默认样式
+	BlurRegions                 []BlurRegion            // Regions to apply delogo filter
+	SubtitleOverlay             *OverlayConfig          // Subtitle position and size over video
 }
 
 type SrtSentence struct {

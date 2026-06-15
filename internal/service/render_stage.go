@@ -38,13 +38,49 @@ func escapeAssFilterPath(path string) string {
 	return p
 }
 
-func buildEmbedSubtitleArgs(req RenderVideoRequest) ([]string, string) {
+func buildEmbedSubtitleArgs(req RenderVideoRequest, videoWidth, videoHeight int) ([]string, string) {
 	assPath := renderAssPath(req)
 	ass := escapeAssFilterPath(assPath)
+
+	var filters []string
+
+	// Apply delogo (blur) regions if any
+	if req.StepParam != nil && req.StepParam.BlurRegions != nil {
+		for _, region := range req.StepParam.BlurRegions {
+			// Convert percentage (0.0 - 1.0) to actual pixels
+			x := int(region.X * float64(videoWidth))
+			y := int(region.Y * float64(videoHeight))
+			w := int(region.Width * float64(videoWidth))
+			h := int(region.Height * float64(videoHeight))
+
+			// Clamp values to prevent ffmpeg crashes
+			if x < 0 { x = 0 }
+			if y < 0 { y = 0 }
+			if w <= 0 { w = 10 }
+			if h <= 0 { h = 10 }
+			if x+w > videoWidth { w = videoWidth - x }
+			if y+h > videoHeight { h = videoHeight - y }
+
+			filter := fmt.Sprintf("delogo=x=%d:y=%d:w=%d:h=%d", x, y, w, h)
+			if region.Start > 0 || region.End > 0 {
+				if region.End == 0 {
+					region.End = 999999 // a very large number
+				}
+				filter += fmt.Sprintf(":enable='between(t,%f,%f)'", region.Start, region.End)
+			}
+			filters = append(filters, filter)
+		}
+	}
+
+	// Finally, add the ASS subtitle filter
+	filters = append(filters, fmt.Sprintf("ass=%s", ass))
+
+	filterGraph := strings.Join(filters, ",")
+
 	return []string{
 		"-y",
 		"-i", req.InputVideo,
-		"-vf", fmt.Sprintf("ass=%s", ass),
+		"-vf", filterGraph,
 		"-c:a", "aac",
 		"-b:a", "192k",
 		req.OutputFile,
@@ -65,18 +101,23 @@ func renderSubtitleFile(ctx context.Context, req RenderVideoRequest) (string, er
 	if err := srtToAss(req.SubtitleFile, assPath, req.Horizontal, stepParam); err != nil {
 		return "", fmt.Errorf("renderSubtitleFile srtToAss error: %w", err)
 	}
+	width, height, err := getResolution(req.InputVideo)
+	if err != nil {
+		return "", fmt.Errorf("renderSubtitleFile getResolution error: %w", err)
+	}
+
 	if !req.Horizontal {
-		width, height, err := getResolution(req.InputVideo)
-		if err != nil {
-			return "", fmt.Errorf("renderSubtitleFile getResolution error: %w", err)
-		}
 		inputVideo, err := prepareRenderVideoInput(req, width, height, convertToVertical)
 		if err != nil {
 			return "", fmt.Errorf("renderSubtitleFile prepare vertical input error: %w", err)
 		}
 		req.InputVideo = inputVideo
+		width, height, err = getResolution(req.InputVideo)
+		if err != nil {
+			return "", fmt.Errorf("renderSubtitleFile getResolution post-convert error: %w", err)
+		}
 	}
-	args, _ := buildEmbedSubtitleArgs(req)
+	args, _ := buildEmbedSubtitleArgs(req, width, height)
 	cmd := exec.CommandContext(ctx, storage.FfmpegPath, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

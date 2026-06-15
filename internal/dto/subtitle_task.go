@@ -1,5 +1,7 @@
 package dto
 
+import "krillin-ai/internal/types"
+
 type StartVideoSubtitleTaskReq struct {
 	AppId                     uint32   `json:"app_id"`
 	Url                       string   `json:"url"`
@@ -80,14 +82,18 @@ type SubtitleItem struct {
 }
 
 type GetTaskSubtitlesResData struct {
-	TaskId    string         `json:"task_id"`
-	Subtitles []SubtitleItem `json:"subtitles"`
-	VideoUrl  string         `json:"video_url"`
+	TaskId          string               `json:"task_id"`
+	Subtitles       []SubtitleItem       `json:"subtitles"`
+	VideoUrl        string               `json:"video_url"`
+	BlurRegions     []types.BlurRegion   `json:"blur_regions"`
+	SubtitleOverlay *types.OverlayConfig `json:"subtitle_overlay"`
 }
 
 type UpdateTaskSubtitlesReq struct {
-	TaskId    string         `json:"task_id"`
-	Subtitles []SubtitleItem `json:"subtitles"`
+	TaskId          string               `json:"task_id"`
+	Subtitles       []SubtitleItem       `json:"subtitles"`
+	BlurRegions     []types.BlurRegion   `json:"blur_regions"`
+	SubtitleOverlay *types.OverlayConfig `json:"subtitle_overlay"`
 }
 
 type ExportVideoTaskReq struct {
