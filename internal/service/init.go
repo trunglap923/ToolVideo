@@ -6,6 +6,7 @@ import (
 	"krillin-ai/log"
 	"krillin-ai/pkg/aliyun"
 	"krillin-ai/pkg/fasterwhisper"
+	"krillin-ai/pkg/gtts"
 	pkgimage "krillin-ai/pkg/image"
 	"krillin-ai/pkg/localtts"
 	"krillin-ai/pkg/openai"
@@ -59,6 +60,8 @@ func NewService() *Service {
 		ttsClient = aliyun.NewTtsClient(config.Conf.Tts.Aliyun.Speech.AccessKeyId, config.Conf.Tts.Aliyun.Speech.AccessKeySecret, config.Conf.Tts.Aliyun.Speech.AppKey)
 	case "edge-tts":
 		ttsClient = localtts.NewEdgeTtsClient()
+	case "gtts":
+		ttsClient = gtts.NewGTtsClient()
 	}
 
 	s := &Service{

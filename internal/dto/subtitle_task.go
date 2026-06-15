@@ -85,6 +85,7 @@ type GetTaskSubtitlesResData struct {
 	TaskId          string               `json:"task_id"`
 	Subtitles       []SubtitleItem       `json:"subtitles"`
 	VideoUrl        string               `json:"video_url"`
+	SpeechUrl       string               `json:"speech_url"`
 	BlurRegions     []types.BlurRegion   `json:"blur_regions"`
 	SubtitleOverlay *types.OverlayConfig `json:"subtitle_overlay"`
 }

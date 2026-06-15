@@ -363,6 +363,7 @@ func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTask
 
 	// Read config to get original video path, blur regions, and subtitle overlay
 	videoUrl := ""
+	speechUrl := ""
 	var blurRegions []types.BlurRegion
 	var subtitleOverlay *types.OverlayConfig
 
@@ -391,6 +392,15 @@ func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTask
 			}
 			encodedPath := strings.Join(segments, "/")
 			videoUrl = "/api/file/" + encodedPath
+
+			// Parse SpeechUrl if available
+			if stepParam.TtsResultFilePath != "" {
+				speechSegments := strings.Split(strings.ReplaceAll(stepParam.TtsResultFilePath, "\\", "/"), "/")
+				for i, seg := range speechSegments {
+					speechSegments[i] = url.PathEscape(seg)
+				}
+				speechUrl = "/api/file/" + strings.Join(speechSegments, "/")
+			}
 		}
 	}
 
@@ -398,6 +408,7 @@ func (s Service) GetTaskSubtitles(req dto.GetVideoSubtitleTaskReq) (*dto.GetTask
 		TaskId:          req.TaskId,
 		Subtitles:       subtitles,
 		VideoUrl:        videoUrl,
+		SpeechUrl:       speechUrl,
 		BlurRegions:     blurRegions,
 		SubtitleOverlay: subtitleOverlay,
 	}, nil
@@ -793,6 +804,11 @@ func (s Service) RunTtsOnlyTask(req dto.RunTtsOnlyTaskReq) error {
 			taskPtr.Status = types.SubtitleTaskStatusFailed
 			taskPtr.FailReason = "Lỗi tạo TTS: " + err.Error()
 			return
+		}
+
+		// Save the config again to persist TtsResultFilePath
+		if updatedBytes, err := json.MarshalIndent(stepParam, "", "  "); err == nil {
+			_ = os.WriteFile(configPath, updatedBytes, 0644)
 		}
 
 		err = s.uploadSubtitles(ctx, &stepParam)

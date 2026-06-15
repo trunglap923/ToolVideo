@@ -630,6 +630,28 @@
       const taskId = urlParams.get('taskId');
       
       const videoPlayer = document.getElementById('videoPlayer');
+      
+      // Audio player for TTS speech preview
+      let speechAudio = document.getElementById('speechAudio');
+      if (!speechAudio) {
+         speechAudio = document.createElement('audio');
+         speechAudio.id = 'speechAudio';
+         speechAudio.style.display = 'none';
+         document.body.appendChild(speechAudio);
+         
+         // Sync audio with video
+         videoPlayer.addEventListener('play', () => { if(speechAudio.src) speechAudio.play(); });
+         videoPlayer.addEventListener('pause', () => { if(speechAudio.src) speechAudio.pause(); });
+         videoPlayer.addEventListener('seeked', () => { 
+            if(speechAudio.src && Math.abs(speechAudio.currentTime - videoPlayer.currentTime) > 0.5) {
+               speechAudio.currentTime = videoPlayer.currentTime;
+            }
+         });
+         videoPlayer.addEventListener('waiting', () => { if(speechAudio.src) speechAudio.pause(); });
+         videoPlayer.addEventListener('playing', () => { if(speechAudio.src) speechAudio.play(); });
+         videoPlayer.addEventListener('ratechange', () => { if(speechAudio.src) speechAudio.playbackRate = videoPlayer.playbackRate; });
+      }
+
       const listContent = document.getElementById('listContent');
       const subTrack = document.getElementById('subTrack');
       const playhead = document.getElementById('playhead');
@@ -689,6 +711,16 @@
             } else {
               // Fallback
               videoPlayer.src = `/tasks/${taskId}/video.mp4`;
+            }
+
+            if (json.data.speech_url) {
+               speechAudio.src = json.data.speech_url;
+               speechAudio.load();
+               // Mute original video slightly so TTS audio is prominent, or completely
+               videoPlayer.volume = 0.2;
+            } else {
+               speechAudio.removeAttribute('src');
+               videoPlayer.volume = 1.0;
             }
           }
         } catch(e) {

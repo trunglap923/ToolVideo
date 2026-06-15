@@ -81,6 +81,11 @@ func CheckDependency() error {
 			log.GetLogger().Error("edge-tts环境准备失败", zap.Error(err))
 		}
 	}
+	if config.Conf.Tts.Provider == "gtts" {
+		if err = checkGtts(); err != nil {
+			log.GetLogger().Error("gtts环境准备失败", zap.Error(err))
+		}
+	}
 
 	return nil
 }
@@ -620,4 +625,46 @@ func checkEdgeTts() error {
 	storage.EdgeTtsPath = EdgeTtsBinFilePath
 	log.GetLogger().Info("edge-tts安装完成", zap.String("路径", EdgeTtsBinFilePath))
 	return nil
+}
+
+func checkGtts() error {
+	// Ưu tiên kiểm tra gtts-cli trong PATH (đã cài bằng pip install gtts)
+	if _, err := exec.LookPath("gtts-cli"); err == nil {
+		log.GetLogger().Info("Đã tìm thấy gtts-cli trong PATH")
+		storage.GttsBinPath = "gtts-cli"
+		return nil
+	}
+
+	// Kiểm tra các vị trí phổ biến trên Windows (pip install --user)
+	commonPaths := []string{
+		filepath.Join(os.Getenv("APPDATA"), "Python", "Scripts", "gtts-cli.exe"),
+		filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Python", "Python312", "Scripts", "gtts-cli.exe"),
+		filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Python", "Python311", "Scripts", "gtts-cli.exe"),
+		filepath.Join(os.Getenv("LOCALAPPDATA"), "Programs", "Python", "Python310", "Scripts", "gtts-cli.exe"),
+	}
+	for _, p := range commonPaths {
+		if _, err := os.Stat(p); err == nil {
+			log.GetLogger().Info("Đã tìm thấy gtts-cli", zap.String("path", p))
+			storage.GttsBinPath = p
+			return nil
+		}
+	}
+
+	// Thử cài đặt tự động bằng pip
+	log.GetLogger().Info("Không tìm thấy gtts-cli, đang thử cài tự động bằng pip...")
+	pipCmd := exec.Command("pip", "install", "--upgrade", "gtts")
+	out, err := pipCmd.CombinedOutput()
+	if err != nil {
+		log.GetLogger().Error("Không thể tự động cài gtts, vui lòng chạy: pip install gtts",
+			zap.String("output", string(out)), zap.Error(err))
+		return fmt.Errorf("gtts install failed: %w. Please run: pip install gtts", err)
+	}
+	log.GetLogger().Info("Đã cài đặt gtts thành công", zap.String("output", string(out)))
+
+	// Check again after install
+	if _, err := exec.LookPath("gtts-cli"); err == nil {
+		storage.GttsBinPath = "gtts-cli"
+		return nil
+	}
+	return fmt.Errorf("gtts-cli vẫn không tìm thấy sau khi cài. Vui lòng chạy: pip install gtts và thêm Scripts vào PATH")
 }

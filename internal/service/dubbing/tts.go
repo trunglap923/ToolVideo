@@ -8,6 +8,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
+
+	"golang.org/x/sync/errgroup"
 )
 
 func GenerateRawSegments(ctx context.Context, tts types.Ttser, plan []PlanItem, voice, dir string, run CommandRunner, duration DurationProbe) ([]PlanItem, error) {
@@ -26,30 +29,41 @@ func GenerateRawSegments(ctx context.Context, tts types.Ttser, plan []PlanItem, 
 		return nil, err
 	}
 
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(3)
+
 	for i := range plan {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
+		i := i
+		g.Go(func() error {
+			if err := gCtx.Err(); err != nil {
+				return err
+			}
 
-		output := filepath.Join(rawDir, fmt.Sprintf("%d.wav", plan[i].Index))
-		if IsSilenceOnlyText(plan[i].SpokenText) {
-			if err := WriteTinySilence(output, run); err != nil {
-				return nil, err
+			output := filepath.Join(rawDir, fmt.Sprintf("%d.wav", plan[i].Index))
+			if IsSilenceOnlyText(plan[i].SpokenText) {
+				if err := WriteTinySilence(output, run); err != nil {
+					return err
+				}
+			} else {
+				if tts == nil {
+					return errors.New("tts is required for non-silence text")
+				}
+				if err := retryTTS(tts, plan[i].SpokenText, voice, output, 3); err != nil {
+					return fmt.Errorf("tts segment %d failed: %w", plan[i].Index, err)
+				}
 			}
-		} else {
-			if tts == nil {
-				return nil, errors.New("tts is required for non-silence text")
-			}
-			if err := retryTTS(tts, plan[i].SpokenText, voice, output, 3); err != nil {
-				return nil, fmt.Errorf("tts segment %d failed: %w", plan[i].Index, err)
-			}
-		}
 
-		dur, err := duration(output)
-		if err != nil {
-			return nil, fmt.Errorf("measure segment %d duration failed for %s: %w", plan[i].Index, output, err)
-		}
-		plan[i].ActualDuration = dur
+			dur, err := duration(output)
+			if err != nil {
+				return fmt.Errorf("measure segment %d duration failed for %s: %w", plan[i].Index, output, err)
+			}
+			plan[i].ActualDuration = dur
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return plan, nil
@@ -73,37 +87,53 @@ func GenerateRawChunkSegments(ctx context.Context, tts types.Ttser, plan []PlanI
 
 	outPlan := append([]PlanItem(nil), plan...)
 	outChunks := append([]Chunk(nil), chunks...)
+	
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(3)
+	
+	var completed int32
+
 	for i := range outChunks {
-		if onProgress != nil {
-			onProgress(95 + int(float64(i)/float64(len(outChunks))*3))
-		}
-		if err := ctx.Err(); err != nil {
-			return nil, nil, err
-		}
-		text, err := chunkSpeechText(outPlan, outChunks[i])
-		if err != nil {
-			return nil, nil, err
-		}
+		i := i
+		g.Go(func() error {
+			if err := gCtx.Err(); err != nil {
+				return err
+			}
+			text, err := chunkSpeechText(outPlan, outChunks[i])
+			if err != nil {
+				return err
+			}
 
-		output := filepath.Join(rawDir, fmt.Sprintf("chunk_%d.wav", outChunks[i].ID))
-		if IsSilenceOnlyText(text) {
-			if err := WriteTinySilence(output, run); err != nil {
-				return nil, nil, err
+			output := filepath.Join(rawDir, fmt.Sprintf("chunk_%d.wav", outChunks[i].ID))
+			if IsSilenceOnlyText(text) {
+				if err := WriteTinySilence(output, run); err != nil {
+					return err
+				}
+			} else {
+				if tts == nil {
+					return errors.New("tts is required for non-silence text")
+				}
+				if err := retryTTS(tts, text, voice, output, 3); err != nil {
+					return fmt.Errorf("tts chunk %d failed: %w", outChunks[i].ID, err)
+				}
 			}
-		} else {
-			if tts == nil {
-				return nil, nil, errors.New("tts is required for non-silence text")
-			}
-			if err := retryTTS(tts, text, voice, output, 3); err != nil {
-				return nil, nil, fmt.Errorf("tts chunk %d failed: %w", outChunks[i].ID, err)
-			}
-		}
 
-		dur, err := duration(output)
-		if err != nil {
-			return nil, nil, fmt.Errorf("measure chunk %d duration failed for %s: %w", outChunks[i].ID, output, err)
-		}
-		outChunks[i].ActualDuration = dur
+			dur, err := duration(output)
+			if err != nil {
+				return fmt.Errorf("measure chunk %d duration failed for %s: %w", outChunks[i].ID, output, err)
+			}
+			outChunks[i].ActualDuration = dur
+
+			currCompleted := atomic.AddInt32(&completed, 1)
+			if onProgress != nil {
+				onProgress(int(float64(currCompleted) / float64(len(outChunks)) * 95))
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, nil, err
 	}
 
 	return outPlan, outChunks, nil

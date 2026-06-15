@@ -28,3 +28,5 @@ run.log
 uploads/
 main.exe
 *.exe
+test.exe
+server.exe

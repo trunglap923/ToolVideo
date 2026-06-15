@@ -9,5 +9,6 @@ var (
 	WhisperKitPath    string
 	WhispercppPath    string
 	EdgeTtsPath       string
+	GttsBinPath       string
 	VttToSrtPath      string
 )
