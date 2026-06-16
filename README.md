@@ -14,7 +14,8 @@
 
 </div>
 
-## Project Introduction  (v2.0 with Agent support — now released)
+## Project Introduction (v2.0 with Agent support — now released)
+
 [**Quick Start**](#-quick-start)
 
 KrillinAI is a versatile audio and video localization and enhancement solution developed by the Krillin AI team, designed for both human users and AI Agents. The tool covers the complete pipeline including video download, speech transcription, subtitle translation, TTS dubbing, portrait conversion, and cover generation, supporting both landscape and portrait formats to ensure perfect presentation on all major platforms (Bilibili, Xiaohongshu, Douyin, WeChat Video, Kuaishou, YouTube, TikTok, etc.). Human users can complete end-to-end content localization with one click via the client; each capability can also be invoked independently via CLI, and AI Agents can orchestrate single or multiple stages on demand to flexibly compose automated workflows.
@@ -56,47 +57,17 @@ The image below shows the effect of the subtitle file generated after importing 
 <tr>
 <td width="33%">
 
-### Subtitle Translation
-
----
-
-https://github.com/user-attachments/assets/bba1ac0a-fe6b-4947-b58d-ba99306d0339
-
-</td>
-<td width="33%">
-
-### Dubbing
-
----
-
-https://github.com/user-attachments/assets/0b32fad3-c3ad-4b6a-abf0-0865f0dd2385
-
-</td>
-
-<td width="33%">
-
-### Portrait Mode
-
----
-
-https://github.com/user-attachments/assets/c2c7b528-0ef8-4ba9-b8ac-f9f92f6d4e71
-
-</td>
-
-</tr>
-</table>
-
 ## 🔍 Supported Speech Recognition Services
 
 _**All local models in the table below support automatic installation of executable files + model files; you just need to choose, and Klic will prepare everything for you.**_
 
-| Service Source          | Supported Platforms | Model Options                             | Local/Cloud | Remarks                     |
-|------------------------|---------------------|------------------------------------------|-------------|-----------------------------|
-| **OpenAI Whisper**     | All Platforms        | -                                        | Cloud       | Fast speed and good effect  |
-| **FasterWhisper**      | Windows/Linux       | `tiny`/`medium`/`large-v2` (recommended medium+) | Local       | Faster speed, no cloud service cost |
-| **WhisperKit**         | macOS (M-series only) | `large-v2`                              | Local       | Native optimization for Apple chips |
-| **WhisperCpp**         | All Platforms        | `large-v2`                              | Local       | Supports all platforms       |
-| **Alibaba Cloud ASR**  | All Platforms        | -                                        | Cloud       | Avoids network issues in mainland China |
+| Service Source        | Supported Platforms   | Model Options                                    | Local/Cloud | Remarks                                 |
+| --------------------- | --------------------- | ------------------------------------------------ | ----------- | --------------------------------------- |
+| **OpenAI Whisper**    | All Platforms         | -                                                | Cloud       | Fast speed and good effect              |
+| **FasterWhisper**     | Windows/Linux         | `tiny`/`medium`/`large-v2` (recommended medium+) | Local       | Faster speed, no cloud service cost     |
+| **WhisperKit**        | macOS (M-series only) | `large-v2`                                       | Local       | Native optimization for Apple chips     |
+| **WhisperCpp**        | All Platforms         | `large-v2`                                       | Local       | Supports all platforms                  |
+| **Alibaba Cloud ASR** | All Platforms         | -                                                | Cloud       | Avoids network issues in mainland China |
 
 ## 🚀 Large Language Model Support
 
@@ -164,6 +135,7 @@ This software is not signed, so when running on macOS, after completing the file
 
 1. Open the terminal in the directory where the executable file (assuming the file name is KrillinAI_1.0.0_macOS_arm64) is located
 2. Execute the following commands in order:
+
    ```
    sudo xattr -rd com.apple.quarantine ./KrillinAI_1.0.0_macOS_arm64
     sudo chmod +x ./KrillinAI_1.0.0_macOS_arm64
@@ -171,6 +143,48 @@ This software is not signed, so when running on macOS, after completing the file
    ```
 
    This will start the service
+
+### Developer Setup & Build from Source
+
+If you want to run or modify KrillinAI directly from the source code, follow these steps:
+
+**1. Prerequisites:**
+
+- Install [Go (1.21+)](https://go.dev/dl/)
+- Install `ffmpeg` and ensure it's added to your system's PATH.
+- (Optional but recommended) Install `yt-dlp` to download videos directly from links.
+
+**2. Clone the Repository:**
+
+```bash
+git clone https://github.com/KrillinAI/KrillinAI.git
+cd KrillinAI
+```
+
+**3. Configuration:**
+Create a `config` directory and copy the example configuration:
+
+```bash
+mkdir config
+cp config-example.toml config/config.toml
+```
+
+Open `config/config.toml` and fill in your API keys and provider preferences.
+
+**4. 100% Local / Free Setup (Recommended for Entry-Level GPUs like RTX 3050 4GB):**
+If you have limited VRAM and want to run everything locally without API costs:
+
+- **Transcribe (Speech-to-Text):** Set `provider = "fasterwhisper"` and `model = "small"` or `"base"` (avoids Out-Of-Memory errors). Enable `enable_gpu_acceleration`.
+- **Translate (LLM):** Install [Ollama](https://ollama.com/), run a lightweight model like `ollama run qwen2:1.5b` or `gemma:2b`. In `config.toml`, set `[llm]` `base_url = "http://127.0.0.1:11434/v1"`, `api_key = "ollama"`, and `model = "qwen2:1.5b"`. Set `translate_parallel_num = 1`.
+- **Dubbing (TTS):** Set `provider = "edge-tts"` (or `gtts`) for high-quality, free TTS that doesn't consume your GPU VRAM.
+
+**5. Run the Web Interface:**
+
+```bash
+go run cmd/server/main.go
+```
+
+Open your browser and navigate to `http://127.0.0.1:8888`.
 
 ### Docker Deployment
 
@@ -188,14 +202,14 @@ go build -o build/krillinai-cli ./cmd/cli
 
 Command overview:
 
-| Command | Purpose | Typical Outputs |
-|---|---|---|
-| `subtitle` | Generate subtitles from YouTube / Bilibili links or local videos; tries platform captions first, falls back to Whisper transcription | `origin_language_srt.srt`, `target_language_srt.srt`, `bilingual_srt.srt`, `short_origin_mixed_srt.srt` |
-| `tts` | Generate target-language dubbing from target subtitles | `tts_final_audio.wav`, `video_with_tts.mp4` |
-| `render-horizontal` | Produce horizontal video: original + bilingual subtitles, or dubbed video + target subtitles | `horizontal_bilingual.mp4` |
-| `render-vertical` | Produce vertical video: original converted to vertical + short subtitles, or dubbed video + target subtitles | `transferred_vertical_video.mp4`, `vertical_bilingual.mp4` |
-| `pipeline` | Orchestrate multiple stages via `--outputs` | Determined by selected stages |
-| `cover` | Generate a cover image from the original cover and prompt templates | `generated_cover.png` |
+| Command             | Purpose                                                                                                                              | Typical Outputs                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `subtitle`          | Generate subtitles from YouTube / Bilibili links or local videos; tries platform captions first, falls back to Whisper transcription | `origin_language_srt.srt`, `target_language_srt.srt`, `bilingual_srt.srt`, `short_origin_mixed_srt.srt` |
+| `tts`               | Generate target-language dubbing from target subtitles                                                                               | `tts_final_audio.wav`, `video_with_tts.mp4`                                                             |
+| `render-horizontal` | Produce horizontal video: original + bilingual subtitles, or dubbed video + target subtitles                                         | `horizontal_bilingual.mp4`                                                                              |
+| `render-vertical`   | Produce vertical video: original converted to vertical + short subtitles, or dubbed video + target subtitles                         | `transferred_vertical_video.mp4`, `vertical_bilingual.mp4`                                              |
+| `pipeline`          | Orchestrate multiple stages via `--outputs`                                                                                          | Determined by selected stages                                                                           |
+| `cover`             | Generate a cover image from the original cover and prompt templates                                                                  | `generated_cover.png`                                                                                   |
 
 Typical workflow:
 
@@ -256,31 +270,32 @@ The configuration file is divided into several sections: `[app]`, `[server]`, `[
 **Easiest and Quickest Configuration:**
 
 **For Subtitle Translation Only:**
-   * In the `[transcribe]` section, set `provider.name` to `openai`.
-   * You will then only need to fill in your OpenAI API key in the `[llm]` block to start performing subtitle translations. The `app.proxy`, `model`, and `openai.base_url` can be filled in as needed.
+
+- In the `[transcribe]` section, set `provider.name` to `openai`.
+- You will then only need to fill in your OpenAI API key in the `[llm]` block to start performing subtitle translations. The `app.proxy`, `model`, and `openai.base_url` can be filled in as needed.
 
 **Balanced Cost, Speed, and Quality (Using Local Speech Recognition):**
 
-* In the `[transcribe]` section, set `provider.name` to `fasterwhisper`.
-* Set `transcribe.fasterwhisper.model` to `large-v2`.
-* Fill in your large language model configuration in the `[llm]` block.
-* The required local model will be automatically downloaded and installed.
+- In the `[transcribe]` section, set `provider.name` to `fasterwhisper`.
+- Set `transcribe.fasterwhisper.model` to `large-v2`.
+- Fill in your large language model configuration in the `[llm]` block.
+- The required local model will be automatically downloaded and installed.
 
 **Text-to-Speech (TTS) Configuration (Optional):**
 
-* TTS configuration is optional.
-* First, set the `provider.name` under the `[tts]` section (e.g., `aliyun` or `openai`).
-* Then, fill in the corresponding configuration block for the selected provider. For example, if you choose `aliyun`, you must fill in the `[tts.aliyun]` section.
-* Voice codes in the user interface should be chosen based on the selected provider's documentation.
-* **Note:** If you plan to use the voice cloning feature, you must select `aliyun` as the TTS provider.
+- TTS configuration is optional.
+- First, set the `provider.name` under the `[tts]` section (e.g., `aliyun` or `openai`).
+- Then, fill in the corresponding configuration block for the selected provider. For example, if you choose `aliyun`, you must fill in the `[tts.aliyun]` section.
+- Voice codes in the user interface should be chosen based on the selected provider's documentation.
+- **Note:** If you plan to use the voice cloning feature, you must select `aliyun` as the TTS provider.
 
 **Alibaba Cloud Configuration:**
 
-* For details on obtaining the necessary `AccessKey`, `Bucket`, and `AppKey` for Alibaba Cloud services, please refer to the [Alibaba Cloud Configuration Instructions](https://www.google.com/search?q=./aliyun.md). The repeated fields for AccessKey, etc., are designed to maintain a clear configuration structure.
+- For details on obtaining the necessary `AccessKey`, `Bucket`, and `AppKey` for Alibaba Cloud services, please refer to the [Alibaba Cloud Configuration Instructions](https://www.google.com/search?q=./aliyun.md). The repeated fields for AccessKey, etc., are designed to maintain a clear configuration structure.
 
 **Short Subtitle Configuration:**
 
-* `short_subtitle_max_chars`: Maximum characters per line for English short subtitles (default: 20)
+- `short_subtitle_max_chars`: Maximum characters per line for English short subtitles (default: 20)
   - Designed for portrait/vertical videos
   - Chinese text remains intact, English text is split according to this length
   - Recommended value: 15-25
